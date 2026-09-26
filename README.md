@@ -1,8 +1,8 @@
-# Interlock
+# InterLock
 
 **Two companies. Two private playbooks. One signed joint procedure, without either side reading the other's.**
 
-Team **Interlock**: Aditi Kumari, Austin Zhao, Arnav Sacheti, Shun-Hsun Liang.
+Team **InterLock**: Aditi Kumari, Austin Zhao, Arnav Sacheti, Shun-Hsun Liang.
 Built in one day at the MongoDB Harness Engineering & Model Wrangling Hackathon (Cerebral Valley, NYC, 26 Sep 2026).
 
 > Merge without disclosing. Check without trusting. Change one rule, re-stitch one seam.
@@ -17,7 +17,7 @@ When two organizations have to work together on one job, each already has a step
 
 Then the procedures change. A threshold moves, a field becomes required, a tool starts doing more than it used to. Today that reopens the whole email thread.
 
-## What Interlock does
+## What InterLock does
 
 A trusted mediator on MongoDB Atlas takes both procedures in full, lines up the steps that correspond, joins the two into one graph, checks that the result is sound, asks each company a handful of questions only where it cannot decide alone, and issues a **signed contract**. Each company gets back **only its own slice**, with the partner collapsed into a single opaque box that says what goes in, what comes out, and how it can end.
 
@@ -42,18 +42,18 @@ The company names are invented; the procedures are not. Two formats on purpose: 
 
 What each side guards: Northwind does not want Lakeside to know it uses Stripe or that managers approve big orders. Lakeside does not want Northwind to see how it judges eligibility. What they want together is a checkout where a Lakeside loan pays for a Northwind order.
 
-## The walkthrough: six scenes
+## The demo: the Merge Console, six stages
 
-`scripts/view.sh` serves `ui/index.html`, which reads `ui/demo.json`: every stage's results and the live model outputs, computed once by `python -m pmp.snapshot`. Arrow keys move between scenes.
+`scripts/view.sh` serves `ui/index.html`, the Merge Console. Everything it shows comes from `ui/demo.js`: every stage's results and the live model outputs, computed once by `python -m pmp.snapshot`. The page keeps its own layout and interactions (the merge plays out link by link, the interview is answered by clicking, each org signs the contract, the runs play step by step); a small data overlay at the bottom of the file fills in the real inputs, alignments, findings, questions, certificate, handoffs, rejection, repair and the threshold update. Arrow keys move between stages. `ui/walkthrough.html` is a second, denser view of the same data.
 
-| Scene | What you see | Numbers |
+| Stage | What you see | Numbers |
 |---|---|---|
 | 1 **Input** | Both procedures as written, the compiled graphs side by side, and the compile findings (two mistakes in the published Arazzo file, one prose policy turned into a human gate). | A: 10 nodes / 11 edges. B: 10 nodes / 12 edges. 3 LINT findings. |
 | 2 **Merge** | The alignment table with the model's rationale per pair, the merged graph with its three boundary edges drawn between the lanes, and the validator's findings placed on the resolution ladder. | 5 alignments. 20 nodes, 26 edges. Exactly 7 findings, 12 other checks pass. |
 | 3 **Interview** | The one rule decision, then five questions as a conversation: who was asked, which role, the default, the answer, and the guardrail each answer became. | 5 questions (4 to Northwind, 1 to Lakeside), 3 defaults accepted. |
-| 4 **Contract** | Certificate stats and hashes, the boundary table, both projections. **View as Northwind** collapses Lakeside into one sealed box. | 35 checks: 33 pass, 2 guarded. Projection A 13 nodes, B 11. Contract v1 active. |
-| 5 **Run** | Run 0001 as a two-column timeline with every handoff on the wire. Run 0002: the rejection, the mediator's repair from Northwind's own data model, contract v2, the retry. | Run 0001: h1, h2, h3 accepted. Run 0002: 1 rejection, contract v2, completed. |
-| 6 **Update** | Northwind raises its approval threshold. The change traced through the derivation index: what changed, what was rebuilt, what was re-run, what was carried, who signs. | 6 elements changed, 3 guardrails rebuilt, 9 checks re-run, 16 carried, 0 questions, contract v3. |
+| 4 **Contract** | The joint procedure with the certificate's real counts and hashes; each org reviews its four invariants and signs. **Northwind sees** collapses Lakeside into one sealed box listing only what crosses and under which guard. | 35 checks: 33 pass, 2 guarded. Projection A 13 nodes, B 11. Contract v1 active. |
+| 5 **Run** | Run 0001 plays step by step over the graph, with every handoff's real payload. Run 0002: Lakeside changes its mind, h1 is refused, the mediator repairs the contract from Northwind's own data model, the retry passes. | Run 0001: h1, h2, h3 accepted. Run 0002: 1 rejection, contract v2, completed. |
+| 6 **Update** | Northwind raises its approval threshold: the computed change, what it touched, which checks re-ran, what was carried, who signs. Three further changes are shown as projections of the same rules. | 6 elements changed, 3 guardrails rebuilt, 9 checks re-run, 16 carried, 0 questions, contract v3. |
 
 ## What happens, stage by stage
 
@@ -206,7 +206,7 @@ Tests: `pytest -q` runs about 125 tests offline against an in-memory backend, in
 | `pmp/runtime/mediator.py` | 7 | change stream on `rejections` → patch → contract v+1 |
 | `pmp/update.py` | 8 | `elements`, `derivations` → graph delta → `$graphLookup` reverse lookup → rebuild → contract v+1 |
 | `pmp/snapshot.py` | demo | runs everything once in memory and writes `ui/demo.json` and `ui/demo.js` |
-| `pmp/runtime/api.py`, `ui/index.html` | UI | the six-scene walkthrough over the snapshot |
+| `pmp/runtime/api.py`, `ui/index.html` | UI | the Merge Console over the snapshot (`ui/walkthrough.html`: the denser second view) |
 | `pmp/runtime/run.py` | 6, 7 | drives run 0001 and 0002 (in-process, HTTP, or `--in-memory`) |
 | `pmp/predicate.py` | all | the one predicate evaluator |
 | `pmp/spec.py`, `spec/*.schema.json` | all | every document validates against a JSON Schema |
