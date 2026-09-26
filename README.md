@@ -2,7 +2,7 @@
 
 **Two companies. Two private playbooks. One signed joint procedure, without either side reading the other's.**
 
-Built in one day at the MongoDB Harness Engineering & Model Wrangling hackathon (.local NYC, 26 Sep 2026).
+Team **InterLock**. Built in one day at the MongoDB Harness Engineering & Model Wrangling hackathon (.local NYC, 26 Sep 2026).
 
 ## The problem
 
