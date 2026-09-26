@@ -90,6 +90,7 @@
 <main id="main"><div class="empty">loading demo.json…</div></main>
 <footer><button id="prev">← Back</button><span class="hint">← → arrow keys move between steps · everything shown is precomputed</span><button id="next">Next →</button></footer>
 
+<script src="demo.js"></script>
 <script>
 (async function () {
   const $ = (s) => document.querySelector(s);
@@ -103,9 +104,13 @@
   const ladder = (r) => `<span class="ladder" title="rung ${r} of 6">${[1,2,3,4,5,6].map((i) => `<i class="${i <= (r || 0) ? "on" : ""}"></i>`).join("")}</span>`;
   const when = (ts) => ts ? String(ts).replace("T", " ").replace("Z", "") : "";
 
-  let D;
-  try { D = await (await fetch("demo.json", { cache: "no-store" })).json(); }
-  catch (e) { $("#main").innerHTML = `<div class="callout bad">Could not load <code>demo.json</code>. Serve this folder over HTTP: <code>python -m pmp.runtime.api</code> or <code>python -m http.server 8000 --directory ui</code>.</div>`; return; }
+  const fail = (msg) => { $("#main").innerHTML = `<div class="callout bad" style="margin:20px 0">${msg}</div>`; };
+  window.addEventListener("error", (e) => fail(`Page error: <code>${esc(e.message)}</code> (${esc((e.filename || "").split("/").pop())}:${e.lineno}). Please report this line.`));
+  let D = window.PMP_DEMO;
+  if (!D) {
+    try { D = await (await fetch("demo.json", { cache: "no-store" })).json(); }
+    catch (e) { fail(`Could not load <code>demo.js</code> or <code>demo.json</code>. Regenerate with <code>python -m pmp.snapshot</code>, or serve the folder: <code>scripts/view.sh</code>.`); return; }
+  }
   $("#sub").textContent = `${D.use_case} · Northwind (merchant) × Lakeside (lender) · precomputed ${when(D.generated_at)} · alignments: ${D.models.alignments_source} (${D.models.llm})`;
 
   // ------------------------------------------------------------ lane graph (SVG)
@@ -327,6 +332,9 @@
 
   // ------------------------------------------------------------ navigation
   function render() {
+    try { renderScene(); } catch (e) { fail(`Could not render step ${state.i + 1}: <code>${esc(e.message)}</code>`); console.error(e); }
+  }
+  function renderScene() {
     const s = scenes[state.i];
     $("#stepper").innerHTML = scenes.map((x, i) => `<button class="${i === state.i ? "on" : i < state.i ? "done" : ""}" data-i="${i}"><span class="n">STEP ${i + 1}</span>${esc(x.title)}</button>`).join("");
     $("#main").innerHTML = `<div class="scene" id="scene-${s.key}">${s.render()}</div>`;

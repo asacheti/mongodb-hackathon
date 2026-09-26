@@ -72,8 +72,8 @@ def elements_of(sub: dict) -> list[dict]:
 def _d(use_case: str, derived_id: str, kind: str, rebuild_fn: str, inputs: list[str], derived_inputs: list[str] | None = None,
        built_by: str | None = None, output: Any = None, label: str = "") -> dict:
     return {"_id": f"{use_case}:{derived_id}", "use_case_id": use_case, "derived_id": derived_id, "kind": kind, "rebuild_fn": rebuild_fn,
-            "inputs": inputs, "derived_inputs": derived_inputs or [], "built_by": built_by, "output_hash": sha256(output) if output is not None else None,
-            "label": label}
+            "inputs": inputs, "derived_inputs": derived_inputs or [], "built_from": list(inputs) + list(derived_inputs or []),
+            "built_by": built_by, "output_hash": sha256(output) if output is not None else None, "label": label}
 
 
 def derivations_of(merged: dict, subs: dict[str, dict], questions: list[dict], decisions: list[dict], cert_checks: list[dict],
@@ -310,8 +310,27 @@ def _numbers_of_summary(el: dict) -> list[float]:
 
 # --------------------------------------------------------------------------- reverse lookup + rebuild
 
+def affected_atlas(use_case: str, changed_ids: set[str]) -> dict[str, list[str]] | None:
+    """The same reverse lookup as a single $graphLookup over `derivations` (built_from is inputs + derived_inputs):
+    start from the changed element ids and follow every derivation built from them, transitively."""
+    if db.in_memory() or not changed_ids:
+        return None
+    pipeline = [
+        {"$limit": 1},
+        {"$graphLookup": {"from": "derivations", "startWith": sorted(changed_ids), "connectFromField": "derived_id",
+                          "connectToField": "built_from", "as": "hit", "restrictSearchWithMatch": {"use_case_id": use_case}}},
+        {"$project": {"hit.derived_id": 1, "hit.built_from": 1}},
+    ]
+    doc = next(db.col("derivations").aggregate(pipeline), None)
+    if not doc:
+        return None
+    ids = {h["derived_id"] for h in doc["hit"]}
+    return {h["derived_id"]: [x for x in h["built_from"] if x in changed_ids or x in ids] for h in doc["hit"]}
+
+
 def affected(derivations: list[dict], changed_ids: set[str]) -> dict[str, list[str]]:
-    """derived_id -> the changed elements / derived things it was built from (transitively)."""
+    """derived_id -> the changed elements / derived things it was built from (transitively). Pure-Python form;
+    affected_atlas() is the same lookup as an Atlas $graphLookup."""
     by_id = {d["derived_id"]: d for d in derivations}
     hit: dict[str, list[str]] = {}
     for d in derivations:
@@ -360,8 +379,9 @@ def apply_update(org: str, policy: str, max_amount: float, *, use_case: str = DE
     delta = graph_delta(subs[org], new_sub)
     changed_ids = {c["element_id"] for c in delta["changed"] + delta["added"] + delta["removed"]}
 
-    # 2. reverse lookup
-    hit = affected(derivations, changed_ids)
+    # 2. reverse lookup: $graphLookup over the index in Atlas, the same walk in Python otherwise
+    write_index(elements, derivations, use_case)
+    hit = affected_atlas(use_case, changed_ids) or affected(derivations, changed_ids)
     q_inputs = {q["_id"]: [i for d in derivations for i in d["inputs"] if d.get("built_by") == q["_id"]] for q in qs}
     questions_reasked = [qid for qid, ins in q_inputs.items() if set(ins) & changed_ids]
     change_class = classify(delta, hit, questions_reasked)

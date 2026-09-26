@@ -254,6 +254,8 @@ def main(argv: list[str] | None = None) -> int:
     a = p.parse_args(argv)
     snap = build(a.fixture_align)
     a.out.write_text(json.dumps(snap, indent=1) + "\n")
+    js = a.out.with_suffix(".js")                       # same data as a script: the page works when opened as a file too
+    js.write_text("window.PMP_DEMO = " + json.dumps(snap, separators=(",", ":")) + ";\n")
     print(f"wrote {a.out} ({a.out.stat().st_size // 1024} KB); alignments from {snap['models']['alignments_source']}; "
           f"update: {snap['update']['friction']}; checks re-run {snap['update']['checks_rerun']}")
     return 0

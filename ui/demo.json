@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-26T20:05:22Z",
+ "generated_at": "2026-09-26T20:12:32Z",
  "use_case": "bnpl_checkout_v1",
  "models": {
   "embedding": "openai/text-embedding-3-small",
@@ -1964,7 +1964,7 @@
      "user": "default"
     },
     "accepted_default": true,
-    "ts": "2026-09-26T20:05:22Z",
+    "ts": "2026-09-26T20:12:32Z",
     "guardrails": [
      {
       "type": "adapter_node",
@@ -2072,7 +2072,7 @@
      "user": "default"
     },
     "accepted_default": true,
-    "ts": "2026-09-26T20:05:22Z",
+    "ts": "2026-09-26T20:12:32Z",
     "guardrails": [
      {
       "type": "allowlist",
@@ -2113,7 +2113,7 @@
      "user": "default"
     },
     "accepted_default": true,
-    "ts": "2026-09-26T20:05:22Z",
+    "ts": "2026-09-26T20:12:32Z",
     "guardrails": [
      {
       "type": "compensation_edge",
@@ -2676,18 +2676,18 @@
      "evidence": "no cross-org content beyond the opaque interface node"
     }
    ],
-   "issued_at": "2026-09-26T20:05:22Z",
+   "issued_at": "2026-09-26T20:12:32Z",
    "signatures": {
     "mediator": {
      "alg": "Ed25519",
      "kid": "mediator-2026-09",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK"
     },
     "A": {
      "alg": "Ed25519",
      "kid": "northwind-k1",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK",
      "local_checks_rerun": 31,
      "invariants": [
@@ -2700,7 +2700,7 @@
     "B": {
      "alg": "Ed25519",
      "kid": "lakeside-k1",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK",
      "local_checks_rerun": 31,
      "invariants": [
@@ -2840,7 +2840,7 @@
    "id": "ctr_northwind_lakeside_bnpl",
    "version": 1,
    "status": "active",
-   "issued_at": "2026-09-26T20:05:22Z",
+   "issued_at": "2026-09-26T20:12:32Z",
    "boundary_edges": [
     {
      "id": "h1",
@@ -4217,7 +4217,7 @@
    "events": [
     {
      "n": 3,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": null,
@@ -4226,7 +4226,7 @@
     },
     {
      "n": 4,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.create_customer",
@@ -4235,7 +4235,7 @@
     },
     {
      "n": 5,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.create_invoice",
@@ -4244,7 +4244,7 @@
     },
     {
      "n": 6,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.add_items",
@@ -4253,7 +4253,7 @@
     },
     {
      "n": 7,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.finalize_invoice",
@@ -4262,7 +4262,7 @@
     },
     {
      "n": 8,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -4271,7 +4271,7 @@
     },
     {
      "n": 9,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -4280,7 +4280,7 @@
     },
     {
      "n": 10,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.checkLoanCanBeProvided",
@@ -4289,7 +4289,7 @@
     },
     {
      "n": 11,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.checkLoanCanBeProvided",
@@ -4298,7 +4298,7 @@
     },
     {
      "n": 12,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.getCustomerTermsAndConditions",
@@ -4307,7 +4307,7 @@
     },
     {
      "n": 13,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.decide_eligibilityCheckRequired",
@@ -4316,7 +4316,7 @@
     },
     {
      "n": 14,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.createCustomer",
@@ -4325,7 +4325,7 @@
     },
     {
      "n": 15,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.initiateBnplTransaction",
@@ -4334,7 +4334,7 @@
     },
     {
      "n": 16,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.decide_redirectAuthToken",
@@ -4343,7 +4343,7 @@
     },
     {
      "n": 17,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.authenticateCustomerAndAuthorizeLoan",
@@ -4352,7 +4352,7 @@
     },
     {
      "n": 18,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -4361,7 +4361,7 @@
     },
     {
      "n": 19,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -4370,7 +4370,7 @@
     },
     {
      "n": 20,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -4379,7 +4379,7 @@
     },
     {
      "n": 21,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -4388,7 +4388,7 @@
     },
     {
      "n": 22,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.await_invoice_paid",
@@ -4397,7 +4397,7 @@
     },
     {
      "n": 23,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.approve_large_order",
@@ -4406,7 +4406,7 @@
     },
     {
      "n": 24,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -4415,7 +4415,7 @@
     },
     {
      "n": 25,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -4424,7 +4424,7 @@
     },
     {
      "n": 26,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -4433,7 +4433,7 @@
     },
     {
      "n": 27,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -4442,7 +4442,7 @@
     },
     {
      "n": 28,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -4451,7 +4451,7 @@
     },
     {
      "n": 29,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -4460,7 +4460,7 @@
     },
     {
      "n": 30,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.T_fulfilled",
@@ -4469,7 +4469,7 @@
     },
     {
      "n": 31,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.T_fulfilled",
@@ -4478,7 +4478,7 @@
     },
     {
      "n": 32,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -4487,7 +4487,7 @@
     },
     {
      "n": 33,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -4502,7 +4502,7 @@
      "sender": "A",
      "receiver": "B",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "customer": {
        "email": "jenny.rosen@example.com",
@@ -4556,7 +4556,7 @@
      "sender": "B",
      "receiver": "A",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "finalizedPaymentPlan": {
        "status": "authorized",
@@ -4595,7 +4595,7 @@
      "sender": "A",
      "receiver": "B",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "fulfilled_at": "2026-09-26T09:14:40Z",
       "fulfilment_state": "shipped",
@@ -4666,23 +4666,23 @@
    "contract_version": 1,
    "runtime_events": [
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "run 0001 attempt 1: A completed (fulfilled)"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "B republished: ['customer.postalCode'] now required on h1"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "rejection MISSING_FIELDS on h1 seq 1: ['customer.postalCode']; contract suspect"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "mediator: contract v2 active, supersedes v1 (MISSING_FIELDS on h1: customer.postalCode)"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "run 0001 attempt 1: A completed (fulfilled)"
     }
    ]
@@ -4722,7 +4722,7 @@
    "events": [
     {
      "n": 36,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": null,
@@ -4731,7 +4731,7 @@
     },
     {
      "n": 37,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.create_customer",
@@ -4740,7 +4740,7 @@
     },
     {
      "n": 38,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.create_invoice",
@@ -4749,7 +4749,7 @@
     },
     {
      "n": 39,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.add_items",
@@ -4758,7 +4758,7 @@
     },
     {
      "n": 40,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.finalize_invoice",
@@ -4767,7 +4767,7 @@
     },
     {
      "n": 41,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -4776,7 +4776,7 @@
     },
     {
      "n": 42,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -4785,7 +4785,7 @@
     },
     {
      "n": 43,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.checkLoanCanBeProvided",
@@ -4794,7 +4794,7 @@
     },
     {
      "n": 44,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -4803,7 +4803,7 @@
     },
     {
      "n": 47,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": null,
@@ -4812,7 +4812,7 @@
     },
     {
      "n": 48,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": null,
@@ -4821,7 +4821,7 @@
     },
     {
      "n": 49,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.create_customer",
@@ -4830,7 +4830,7 @@
     },
     {
      "n": 50,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.create_invoice",
@@ -4839,7 +4839,7 @@
     },
     {
      "n": 51,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.add_items",
@@ -4848,7 +4848,7 @@
     },
     {
      "n": 52,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.finalize_invoice",
@@ -4857,7 +4857,7 @@
     },
     {
      "n": 53,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -4866,7 +4866,7 @@
     },
     {
      "n": 54,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -4875,7 +4875,7 @@
     },
     {
      "n": 55,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.checkLoanCanBeProvided",
@@ -4884,7 +4884,7 @@
     },
     {
      "n": 56,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.checkLoanCanBeProvided",
@@ -4893,7 +4893,7 @@
     },
     {
      "n": 57,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.getCustomerTermsAndConditions",
@@ -4902,7 +4902,7 @@
     },
     {
      "n": 58,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.decide_eligibilityCheckRequired",
@@ -4911,7 +4911,7 @@
     },
     {
      "n": 59,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.createCustomer",
@@ -4920,7 +4920,7 @@
     },
     {
      "n": 60,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.initiateBnplTransaction",
@@ -4929,7 +4929,7 @@
     },
     {
      "n": 61,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.decide_redirectAuthToken",
@@ -4938,7 +4938,7 @@
     },
     {
      "n": 62,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.authenticateCustomerAndAuthorizeLoan",
@@ -4947,7 +4947,7 @@
     },
     {
      "n": 63,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -4956,7 +4956,7 @@
     },
     {
      "n": 64,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -4965,7 +4965,7 @@
     },
     {
      "n": 65,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -4974,7 +4974,7 @@
     },
     {
      "n": 66,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -4983,7 +4983,7 @@
     },
     {
      "n": 67,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.await_invoice_paid",
@@ -4992,7 +4992,7 @@
     },
     {
      "n": 68,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.approve_large_order",
@@ -5001,7 +5001,7 @@
     },
     {
      "n": 69,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.fulfil_order",
@@ -5010,7 +5010,7 @@
     },
     {
      "n": 70,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.fulfil_order",
@@ -5019,7 +5019,7 @@
     },
     {
      "n": 71,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.updateOrderStatus",
@@ -5028,7 +5028,7 @@
     },
     {
      "n": 72,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.updateOrderStatus",
@@ -5037,7 +5037,7 @@
     },
     {
      "n": 73,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.updateOrderStatus",
@@ -5046,7 +5046,7 @@
     },
     {
      "n": 74,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.fulfil_order",
@@ -5055,7 +5055,7 @@
     },
     {
      "n": 75,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.T_fulfilled",
@@ -5064,7 +5064,7 @@
     },
     {
      "n": 76,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.T_fulfilled",
@@ -5073,7 +5073,7 @@
     },
     {
      "n": 77,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0002",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -5082,7 +5082,7 @@
     },
     {
      "n": 78,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0002",
      "node": "A.adapt_basket_for_lender",
@@ -5097,7 +5097,7 @@
      "sender": "A",
      "receiver": "B",
      "status": "rejected",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "customer": {
        "email": "jenny.rosen@example.com",
@@ -5151,7 +5151,7 @@
       "seq": 1,
       "receiver": "B",
       "contract_version": 1,
-      "ts": "2026-09-26T20:05:22Z",
+      "ts": "2026-09-26T20:12:32Z",
       "missing": [
        "customer.postalCode"
       ],
@@ -5164,7 +5164,7 @@
      "sender": "A",
      "receiver": "B",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "customer": {
        "email": "jenny.rosen@example.com",
@@ -5219,7 +5219,7 @@
      "sender": "B",
      "receiver": "A",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "finalizedPaymentPlan": {
        "status": "authorized",
@@ -5258,7 +5258,7 @@
      "sender": "A",
      "receiver": "B",
      "status": "accepted",
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "payload": {
       "fulfilled_at": "2026-09-26T09:14:40Z",
       "fulfilment_state": "shipped",
@@ -5330,23 +5330,23 @@
    "contract_version": 2,
    "runtime_events": [
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "B republished: ['customer.postalCode'] now required on h1"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "run 0002 attempt 1: A rejected (None)"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "rejection MISSING_FIELDS on h1 seq 1: ['customer.postalCode']; contract suspect"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "mediator: contract v2 active, supersedes v1 (MISSING_FIELDS on h1: customer.postalCode)"
     },
     {
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "event": "run 0002 attempt 2 under contract v2: A completed (fulfilled)"
     }
    ],
@@ -5367,7 +5367,7 @@
     ],
     "expected": "required by checkLoanCanBeProvided",
     "contract_version": 1,
-    "ts": "2026-09-26T20:05:22Z"
+    "ts": "2026-09-26T20:12:32Z"
    },
    "patch": {
     "plan": {
@@ -5412,14 +5412,14 @@
     },
     "merged_version": 3,
     "contract_version": 2,
-    "ts": "2026-09-26T20:05:22Z"
+    "ts": "2026-09-26T20:12:32Z"
    },
    "contract_v2": {
     "version": 2,
     "status": "active",
     "reason": "MISSING_FIELDS on h1: customer.postalCode",
     "supersedes": 1,
-    "issued_at": "2026-09-26T20:05:22Z",
+    "issued_at": "2026-09-26T20:12:32Z",
     "h1_allowlist": [
      "customer.email",
      "customer.name",
@@ -5429,7 +5429,7 @@
      "products.purchaseAmount",
      "total"
     ],
-    "h_B": "sha256:8d27da7d74b4e6a1df5439faa284f374d0b9cd9f166672c812bb3eda86ff0034",
+    "h_B": "sha256:f88caa1249671c3ffceaa5bf7ed6d248b9383c0ef5a13e0520b1b79695ee17a5",
     "checks": 35
    }
   },
@@ -5439,7 +5439,7 @@
     "status": "superseded",
     "reason": "initial",
     "supersedes": null,
-    "issued_at": "2026-09-26T20:05:22Z",
+    "issued_at": "2026-09-26T20:12:32Z",
     "certificate_id": "cert_bnpl_checkout_v1_0001"
    },
    {
@@ -5447,7 +5447,7 @@
     "status": "superseded",
     "reason": "MISSING_FIELDS on h1: customer.postalCode",
     "supersedes": 1,
-    "issued_at": "2026-09-26T20:05:22Z",
+    "issued_at": "2026-09-26T20:12:32Z",
     "certificate_id": "cert_bnpl_checkout_v1_0002"
    },
    {
@@ -5455,7 +5455,7 @@
     "status": "active",
     "reason": "republish: Northwind large_order_approval max_amount 10,000 -> 15,000 (loosen)",
     "supersedes": 2,
-    "issued_at": "2026-09-26T20:05:22Z",
+    "issued_at": "2026-09-26T20:12:32Z",
     "certificate_id": "cert_bnpl_checkout_v1_0003"
    }
   ]
@@ -5473,7 +5473,7 @@
     "old": "2.4.0",
     "new": "2.5.0"
    },
-   "ts": "2026-09-26T20:05:22Z"
+   "ts": "2026-09-26T20:12:32Z"
   },
   "delta": {
    "org": "A",
@@ -6069,13 +6069,13 @@
     "mediator": {
      "alg": "Ed25519",
      "kid": "mediator-2026-09",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK"
     },
     "A": {
      "alg": "Ed25519",
      "kid": "northwind-k1",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK",
      "local_checks_rerun": 31,
      "invariants": [
@@ -6088,7 +6088,7 @@
     "B": {
      "alg": "Ed25519",
      "kid": "lakeside-k1",
-     "signed_at": "2026-09-26T20:05:22Z",
+     "signed_at": "2026-09-26T20:12:32Z",
      "sig": "MOCK",
      "local_checks_rerun": 31,
      "invariants": [
@@ -6101,15 +6101,15 @@
    },
    "inputs": {
     "h_A": "sha256:cf45ce03c387e634c858e30e420d55356ef47256bc9d1cd5a9cfa002f8ad3dd0",
-    "h_B": "sha256:8d27da7d74b4e6a1df5439faa284f374d0b9cd9f166672c812bb3eda86ff0034",
+    "h_B": "sha256:f88caa1249671c3ffceaa5bf7ed6d248b9383c0ef5a13e0520b1b79695ee17a5",
     "h_alignments": "sha256:c9df8dc70d07b73e12e082745baa7328355bcf3201849dd084aee337e2f78010",
     "h_answers": "sha256:3762e0c6c7d3f7441935f93298a58714ef924dbf3275bd035d7cb3b53cda01b5",
-    "h_merge": "sha256:df6565b1a3f90e9e50be4d263e92d34de43b01a0382146a7bdbbe4ff6bd36c62",
+    "h_merge": "sha256:49fb89ec1073b102049c93c3f7d3e4d4829959fb6829b3d2522ac3dccbb12e65",
     "h_projection_A": "sha256:e28e004f0ebc47328007c19fa3760321abc9ac1a49ba710cef8e507a2bd1fcee",
     "h_projection_B": "sha256:03f17c24e9a171d24a07ed0fd123daffc4eced0095ed7820144c5e3a4bd97b2e",
     "h_boundary_interface": "sha256:61a2575703f10070221264ba9dfed8fce20f37e12c2d2d19d2d311e0577c9e50"
    },
-   "issued_at": "2026-09-26T20:05:22Z"
+   "issued_at": "2026-09-26T20:12:32Z"
   },
   "contract_v3": {
    "version": 3,
@@ -6149,7 +6149,7 @@
    "events": [
     {
      "n": 9,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -6158,7 +6158,7 @@
     },
     {
      "n": 20,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -6167,7 +6167,7 @@
     },
     {
      "n": 23,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.approve_large_order",
@@ -6176,7 +6176,7 @@
     },
     {
      "n": 25,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -6185,7 +6185,7 @@
     },
     {
      "n": 29,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -6194,7 +6194,7 @@
     },
     {
      "n": 31,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.T_fulfilled",
@@ -6203,7 +6203,7 @@
     },
     {
      "n": 33,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -6212,7 +6212,7 @@
     },
     {
      "n": 88,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -6221,7 +6221,7 @@
     },
     {
      "n": 99,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.mark_invoice_paid_out_of_band",
@@ -6230,7 +6230,7 @@
     },
     {
      "n": 102,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.approve_large_order",
@@ -6239,7 +6239,7 @@
     },
     {
      "n": 104,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -6248,7 +6248,7 @@
     },
     {
      "n": 108,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.fulfil_order",
@@ -6257,7 +6257,7 @@
     },
     {
      "n": 110,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.T_fulfilled",
@@ -6266,7 +6266,7 @@
     },
     {
      "n": 112,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "A",
      "run": "0001",
      "node": "A.adapt_basket_for_lender",
@@ -6275,7 +6275,7 @@
     },
     {
      "n": 10,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.checkLoanCanBeProvided",
@@ -6284,7 +6284,7 @@
     },
     {
      "n": 19,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -6293,7 +6293,7 @@
     },
     {
      "n": 26,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -6302,7 +6302,7 @@
     },
     {
      "n": 28,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -6311,7 +6311,7 @@
     },
     {
      "n": 32,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -6320,7 +6320,7 @@
     },
     {
      "n": 89,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.checkLoanCanBeProvided",
@@ -6329,7 +6329,7 @@
     },
     {
      "n": 98,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",
@@ -6338,7 +6338,7 @@
     },
     {
      "n": 105,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -6347,7 +6347,7 @@
     },
     {
      "n": 107,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.updateOrderStatus",
@@ -6356,7 +6356,7 @@
     },
     {
      "n": 111,
-     "ts": "2026-09-26T20:05:22Z",
+     "ts": "2026-09-26T20:12:32Z",
      "org": "B",
      "run": "0001",
      "node": "B.retrieveFinalizedPaymentPlan",

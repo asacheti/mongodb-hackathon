@@ -123,13 +123,19 @@ def create_app(use_case: str, urls: dict[str, str]):
     app = FastAPI(title="PMP mediator API")
     refresher = Refresher(use_case, urls)
 
+    NO_CACHE = {"Cache-Control": "no-store"}
+
     @app.get("/")
     def index():
-        return FileResponse(UI)
+        return FileResponse(UI, headers=NO_CACHE)
 
     @app.get("/demo.json")
     def demo_json():
-        return FileResponse(UI.parent / "demo.json", media_type="application/json")
+        return FileResponse(UI.parent / "demo.json", media_type="application/json", headers=NO_CACHE)
+
+    @app.get("/demo.js")
+    def demo_js():
+        return FileResponse(UI.parent / "demo.js", media_type="application/javascript", headers=NO_CACHE)
 
     @app.get("/state")
     def state():
