@@ -1,0 +1,56 @@
+{
+  "stage": 2,
+  "note": "Expected aligner output for bnpl_checkout_v1 (mock/STAGES.md Stage 2). Used by tests/test_align.py offline and by `python -m pmp.align --from-fixture` as the deterministic fallback.",
+  "alignments": [
+    {
+      "_id": "bnpl_checkout_v1:A.create_customer~B.createCustomer",
+      "use_case_id": "bnpl_checkout_v1",
+      "a": "A.create_customer", "b": "B.createCustomer",
+      "a_name": "create_customer", "b_name": "createCustomer",
+      "sigma": 0.93, "iota": "incompatible", "tau": "side_effect/side_effect",
+      "proposal": "distinct", "confidence": 0.88,
+      "rationale": "Same name, different meaning: a Stripe billing record versus a lender eligibility (KYC) record. Both side-effecting, so a merge is forbidden; both steps stay.",
+      "vector_score": 0.87, "confirmed_by": null
+    },
+    {
+      "_id": "bnpl_checkout_v1:A.finalize_invoice~B.checkLoanCanBeProvided",
+      "use_case_id": "bnpl_checkout_v1",
+      "a": "A.finalize_invoice", "b": "B.checkLoanCanBeProvided",
+      "a_name": "finalize_invoice", "b_name": "checkLoanCanBeProvided",
+      "sigma": 0.34, "iota": "partial", "tau": "side_effect/verify",
+      "proposal": "provides_input", "confidence": 0.90,
+      "rationale": "The finalized invoice's line items, total and customer details are the basket the lender's eligibility check needs; units (cents vs major) and field names differ.",
+      "vector_score": 0.62, "confirmed_by": null
+    },
+    {
+      "_id": "bnpl_checkout_v1:A.await_invoice_paid~B.retrieveFinalizedPaymentPlan",
+      "use_case_id": "bnpl_checkout_v1",
+      "a": "A.await_invoice_paid", "b": "B.retrieveFinalizedPaymentPlan",
+      "a_name": "await_invoice_paid", "b_name": "retrieveFinalizedPaymentPlan",
+      "sigma": 0.41, "iota": "partial", "tau": "verify/verify",
+      "proposal": "relate", "confidence": 0.62,
+      "rationale": "Both wait on a payment outcome, but 'invoice paid' and 'payment plan finalized' are cousins, not the same event; the plan is what the merchant receives, not a payment.",
+      "vector_score": 0.66, "confirmed_by": null
+    },
+    {
+      "_id": "bnpl_checkout_v1:A.fulfil_order~B.updateOrderStatus",
+      "use_case_id": "bnpl_checkout_v1",
+      "a": "A.fulfil_order", "b": "B.updateOrderStatus",
+      "a_name": "fulfil_order", "b_name": "updateOrderStatus",
+      "sigma": 0.71, "iota": "missing:loanTransactionId", "tau": "side_effect/side_effect",
+      "proposal": "provides_input", "confidence": 0.86,
+      "rationale": "Northwind's fulfilment is exactly the event the lender's activation waits for, but the lender needs loanTransactionId, which Northwind never carries.",
+      "vector_score": 0.78, "confirmed_by": null
+    },
+    {
+      "_id": "bnpl_checkout_v1:A.collect_payment~B.END_not_eligible",
+      "use_case_id": "bnpl_checkout_v1",
+      "a": "A.collect_payment", "b": "B.END_not_eligible",
+      "a_name": "collect_payment", "b_name": "END_not_eligible",
+      "sigma": 0.12, "iota": "n/a", "tau": "side_effect/n/a",
+      "proposal": "on_failure", "confidence": 0.60,
+      "rationale": "A lender decline is a terminal the merchant must react to; collecting payment by card is the fallback.",
+      "vector_score": null, "confirmed_by": null
+    }
+  ]
+}
