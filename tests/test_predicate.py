@@ -91,6 +91,13 @@ def test_both_sides_can_be_paths():
     assert evaluate(P("eq", "plan.totalLoanAmount", "invoice.total"), ctx) is False
 
 
+def test_money_objects_compare_by_amount():
+    ctx = {"totalLoanAmount": {"currency": "USD", "amount": 2780.0}, "invoice": {"total": 2780.0}}
+    assert evaluate(P("eq", "totalLoanAmount", "invoice.total"), ctx) is True
+    assert evaluate(P("gte", "totalLoanAmount", 5000), ctx) is False
+    assert evaluate(P("lt", "totalLoanAmount", 5000), ctx) is True
+
+
 def test_string_literal_that_looks_like_a_path_but_is_absent_stays_literal():
     assert evaluate(P("eq", "invoice.status", "not.a.path"), CTX) is False
 

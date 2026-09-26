@@ -35,6 +35,13 @@ def _val(arg: Any, ctx: dict) -> Any:
             return None  # a dotted string is a field path; absent path reads as null, never as a literal
     return arg
 
+
+def _money(v: Any) -> Any:
+    """A money value {currency, amount} compares by its amount; a comparison never inspects the currency."""
+    if isinstance(v, dict) and "amount" in v and isinstance(v["amount"], (int, float)):
+        return v["amount"]
+    return v
+
 def evaluate(pred: dict | None, ctx: dict) -> bool:
     if pred is None:
         return True
@@ -49,8 +56,8 @@ def evaluate(pred: dict | None, ctx: dict) -> bool:
         return not evaluate(args[0], ctx)
     if op == "exists":
         return has(args[0], ctx)
-    a = _val(args[0], ctx)
-    b = _val(args[1], ctx)
+    a = _money(_val(args[0], ctx))
+    b = _money(_val(args[1], ctx))
     if op == "eq":
         return a == b
     if op == "ne":

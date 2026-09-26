@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>PMP mediator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;margin:2rem;color:#222}pre{background:#f4f4f4;padding:1rem;overflow:auto}</style>
+</head><body>
+<h1>PMP: Procedure Merge Profile</h1>
+<p>Placeholder page. The three-column UI arrives in P7. Live state:</p>
+<pre id="state">loading…</pre>
+<script>
+async function tick(){try{const r=await fetch('/state');document.getElementById('state').textContent=JSON.stringify(await r.json(),null,2)}catch(e){document.getElementById('state').textContent=String(e)}}
+tick();setInterval(tick,1000);
+</script></body></html>

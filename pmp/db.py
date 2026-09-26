@@ -13,6 +13,26 @@ COLLECTIONS = [
     "merge_questions", "merge_log", "contracts", "projections", "handoffs", "rejections",
 ]
 
+_memory = None  # set by use_memory(): an in-process stand-in for tests and --in-process runs
+
+
+def use_memory(store=None):
+    """Route every pmp.db.col() call to an in-memory store (no Atlas). Returns the store."""
+    global _memory
+    from pmp.memstore import MemoryStore
+    _memory = store or MemoryStore()
+    return _memory
+
+
+def use_atlas() -> None:
+    global _memory
+    _memory = None
+
+
+def in_memory() -> bool:
+    return _memory is not None
+
+
 @lru_cache(maxsize=1)
 def client() -> MongoClient:
     return MongoClient(os.environ["MONGODB_URI"])
@@ -23,6 +43,8 @@ def db():
 def col(name: str) -> Collection:
     if name not in COLLECTIONS:
         raise KeyError(f"unknown collection {name}; add it to pmp.db.COLLECTIONS")
+    if _memory is not None:
+        return _memory.col(name)
     return db()[name]
 
 def reset(use_case_id: str) -> None:

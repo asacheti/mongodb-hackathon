@@ -1,0 +1,139 @@
+{
+  "stage": 6,
+  "note": "Runtime fixtures for bnpl_checkout_v1: per run, the initiating inputs and what each stubbed tool returns (keyed by node id). Values are merged into the agent's run state as dotted paths.",
+  "runs": {
+    "0001": {
+      "title": "USD 2,780 order, financed, happy path",
+      "inputs": {
+        "checkout": {
+          "payment_choice": "pay_later"
+        },
+        "customer": {
+          "name": "Jenny Rosen",
+          "email": "jenny.rosen@example.com",
+          "shipping_address": {
+            "line1": "1 Main St",
+            "city": "Portland",
+            "postal_code": "97201",
+            "country": "US"
+          }
+        },
+        "line_item": [
+          {
+            "price_id": "price_1S9kNzLq7",
+            "quantity": 2,
+            "unit_amount_minor": 99000
+          },
+          {
+            "price_id": "price_1S9kO4Lq7",
+            "quantity": 1,
+            "unit_amount_minor": 80000
+          }
+        ],
+        "invoice": {
+          "currency": "USD"
+        }
+      },
+      "tools": {
+        "A.create_customer": {
+          "customer.customer_id": "cus_Qw3RtY"
+        },
+        "A.create_invoice": {
+          "invoice.invoice_id": "in_1S9kQ2Lq7",
+          "invoice.status": "draft"
+        },
+        "A.add_items": {
+          "invoice.total_minor": 278000,
+          "invoice.total": 2780.0,
+          "line_item.count": 2
+        },
+        "A.finalize_invoice": {
+          "invoice.status": "open"
+        },
+        "A.mark_invoice_paid_out_of_band": {
+          "invoice.status": "paid",
+          "webhook.event": "invoice.paid"
+        },
+        "A.await_invoice_paid": {
+          "webhook.event": "invoice.paid",
+          "invoice.status": "paid"
+        },
+        "A.approve_large_order": {
+          "approval.granted": true,
+          "approval.approver": "ops.manager"
+        },
+        "A.fulfil_order": {
+          "fulfilment_state": "shipped",
+          "shipment_id": "shp_7Hk2",
+          "fulfilled_at": "2026-09-26T09:14:40Z"
+        },
+        "A.collect_payment": {
+          "invoice.status": "paid"
+        },
+        "B.checkLoanCanBeProvided": {
+          "response.statusCode": 200,
+          "response.body.products.count": 2,
+          "response.body.existingCustomerNotEligible": null,
+          "eligibilityCheckRequired": true,
+          "eligibleProducts": [
+            "price_1S9kNzLq7",
+            "price_1S9kO4Lq7"
+          ],
+          "totalLoanAmount": {
+            "currency": "USD",
+            "amount": 2780.0
+          }
+        },
+        "B.getCustomerTermsAndConditions": {
+          "response.statusCode": 200,
+          "termsAndConditions": {
+            "apr": 0.0,
+            "instalments": 4
+          }
+        },
+        "B.createCustomer": {
+          "response.statusCode": 201,
+          "customer": "https://api.lakeside.example/customers/c_88a1"
+        },
+        "B.initiateBnplTransaction": {
+          "response.statusCode": 202,
+          "response.body.redirectAuthToken": "rat_6f2e",
+          "redirectAuthToken": "rat_6f2e",
+          "loanTransactionResourceUrl": "https://api.lakeside.example/loans/ln_4Qz9",
+          "loanTransactionId": "ln_4Qz9"
+        },
+        "B.authenticateCustomerAndAuthorizeLoan": {
+          "response.statusCode": 302,
+          "redirectUrl": "https://auth.lakeside.example/authorize?t=rat_6f2e"
+        },
+        "B.retrieveFinalizedPaymentPlan": {
+          "response.statusCode": 200,
+          "finalizedPaymentPlan": {
+            "status": "authorized",
+            "loanTransactionId": "ln_4Qz9",
+            "instalments": 4
+          },
+          "totalLoanAmount": {
+            "currency": "USD",
+            "amount": 2780.0
+          }
+        },
+        "B.updateOrderStatus": {
+          "response.statusCode": 204,
+          "ack": "activated",
+          "orderStatus": "fulfilled"
+        }
+      }
+    },
+    "0002": {
+      "title": "same order; Lakeside now requires customerPostalCode on h1",
+      "inherits": "0001",
+      "republish": {
+        "org": "B",
+        "require_on_h1": [
+          "customer.postalCode"
+        ]
+      }
+    }
+  }
+}
