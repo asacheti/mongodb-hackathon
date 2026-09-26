@@ -143,6 +143,9 @@ def test_live_merge_and_validate_with_graphlookup():
     from pmp import db
     subs = list(db.col("submissions").find({"use_case_id": USE_CASE}))
     als = list(db.col("alignments").find({"use_case_id": USE_CASE})) or load_fixture(USE_CASE)
+    for al in als:                      # v1 is validated before any decision: forget confirmations a later stage wrote
+        al["confirmed_by"] = None
+        al.pop("decision", None)
     merged = merge.build(subs, als, USE_CASE, 1)
     merge.write(merged)
     results = v.run(merged, subs, als, [], db=db)

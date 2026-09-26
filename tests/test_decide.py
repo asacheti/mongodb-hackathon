@@ -173,6 +173,7 @@ def test_live_decide_from_atlas():
     decide.write(m2, ds, qs, als, findings)
     assert db.col("merge_questions").count_documents({"use_case_id": USE_CASE}) == 5
     assert db.col("merged").find_one({"_id": f"{USE_CASE}:v2", "doc_type": "graph"})
-    assert db.col("alignments").count_documents({"use_case_id": USE_CASE, "confirmed_by": "q1"}) == 1
+    dup = db.col("alignments").find_one({"use_case_id": USE_CASE, "a_name": "create_customer"})
+    assert dup["confirmed_by"] == "q1" and dup["decision"] == "keep_both"
     res = v.run(m2, subs, als, qs, db=db, stage="revalidate")
     assert not [r for r in res if r["verdict"] == "fail"]
