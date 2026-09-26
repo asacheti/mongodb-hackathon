@@ -51,25 +51,32 @@ compile ─▶ align ─▶ merge ─▶ validate ─▶ decide ─▶ contract 
 | 5 | **Contract** | Revalidate. Build projection A and projection B: own nodes plus one opaque partner node carrying only the boundary interface. Each org checks four local invariants; the mediator checks that nothing of the partner leaked. Certificate with real sha256 over every input. | 35 checks: 33 pass, 2 guarded. Projection A 13 nodes, B 11. Contract v1 active. |
 | 6 | **Runtime** | Each org's agent executes its projection (tools stubbed from fixtures) and sends A2A-shaped handoffs. The receiver runs four checks in order: contract active, edge in projection, payload matches schema + allowlist, preconditions hold. | Run 0001 (USD 2,780): h1, h2, h3 accepted. |
 | 7 | **Self-repair** | Lakeside republishes requiring a postal code. The first h1 is rejected (`MISSING_FIELDS`), the contract goes *suspect*. The mediator reads the rejection from an **Atlas change stream**, finds `customer.shipping_address` in Northwind's own data model, extends Northwind's adapter, revalidates, issues contract v2 and supersedes v1. The retry passes. | Run 0002: 1 rejection, contract v2, completed. |
+| 8 | **Update** | Northwind raises its approval threshold from $10,000 to $15,000. Every guardrail, check and projection recorded what it was built from (the **derivation index**: `elements` + `derivations`), so the change is a reverse lookup: rebuild only the h3 guard and the gate condition, re-run only the checks that read them, carry everything else from certificate v2, re-ask nobody (all five answers carried as precedent), and require signatures only from orgs whose slice changed. The system predicts the friction before the change goes in: "Lakeside will need to re-sign but not answer anything." | 6 elements changed, class 2 (boundary), 3 guardrails rebuilt, 9 checks re-run, 16 carried, 0 questions, contract v3. |
 
-End to end, seed to run 0002, takes about 90 seconds on the venue network.
+End to end, seed to contract v3, takes about two minutes on the venue network.
 
-## The UI
+## The walkthrough
 
-`http://127.0.0.1:8000` while the demo runs. Three columns: Northwind, the Atlas mediator, Lakeside. A
-pipeline strip, the contract pill (active / suspect / superseded, with version), a stopwatch from seed
-to run 0002, and an activity log polled every second. The **View as** toggle is the point of the whole
-system: switch to "View as Northwind" and Lakeside collapses into one sealed box showing only the
-boundary interface. Nothing of the lender's private chain, tools, or notes is there, and a mediator check
-(PRIV-01) proves it.
+Everything above is **precomputed once** and saved to `ui/demo.json`, model outputs included, so the demo never
+waits on Atlas or an LLM. The page walks through six scenes: **Input · Merge · Interview · Contract · Run · Update**.
+
+```bash
+scripts/view.sh              # http://127.0.0.1:8000, static: no Atlas, no key, no services
+python -m pmp.snapshot       # regenerate ui/demo.json (uses the live alignments in Atlas when present)
+```
+
+On the Contract scene, switch **View as Northwind**: Lakeside collapses into one sealed box showing only the
+three boundary edges, their fields and guards. On the Update scene, the change is traced through the derivation
+index: red elements changed, amber guardrails and checks rebuilt or re-run, indigo projections re-signed, grey
+carried forward untouched.
 
 ## MongoDB Atlas features used
 
 - **Vector Search** (`steps_vec_idx`: 1536-dim cosine, filtered by `org_id` and `use_case_id`) for alignment candidates.
 - **`$graphLookup`** for reachability over the merged graph, stored as one graph document plus one adjacency document per node.
 - **Change streams** on `rejections`: the mediator is event-driven; a runtime rejection triggers the repair loop.
-- Eleven collections mirroring the pipeline (`submissions`, `steps_vec`, `alignments`, `merged`, `findings`,
-  `merge_questions`, `merge_log`, `contracts`, `projections`, `handoffs`, `rejections`). Every document carries
+- Thirteen collections mirroring the pipeline (`submissions`, `steps_vec`, `alignments`, `merged`, `findings`,
+  `merge_questions`, `merge_log`, `contracts`, `projections`, `handoffs`, `rejections`, `elements`, `derivations`). Every document carries
   `use_case_id` and, where it belongs to one org, `org_id`, so one query answers "what does org A know?".
 
 ## Design rules that held all day
@@ -90,7 +97,8 @@ boundary interface. Nothing of the lender's private chain, tools, or notes is th
 python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # MONGODB_URI, OPENAI_API_KEY (+ OPENAI_BASE_URL for OpenRouter), PMP_DB=pmp
 
-scripts/demo.sh                    # the whole story; UI at http://127.0.0.1:8000; Ctrl-C to stop
+scripts/view.sh                    # the precomputed walkthrough (recommended for judging)
+scripts/demo.sh                    # the whole story live against Atlas, services included; Ctrl-C to stop
 scripts/demo.sh --fixture-align    # same, skipping the LLM (deterministic, no key needed)
 ```
 
@@ -105,6 +113,7 @@ python -m pmp.validate --use-case bnpl_checkout_v1 --version 1
 python -m pmp.decide   --use-case bnpl_checkout_v1           # interactive; or --answer-defaults / --answers mock/stages/4_answers.json
 python -m pmp.contract --use-case bnpl_checkout_v1
 python -m pmp.runtime.run --run 0001 && python -m pmp.runtime.run --run 0002     # in-process, against Atlas
+python -m pmp.update --org A --policy large_order_approval --max-amount 15000    # §6: republish, contract v3
 python -m pmp.runtime.run --run 0002 --in-memory                                 # no Atlas at all
 ```
 
@@ -124,14 +133,16 @@ Tests: `pytest -q` runs about 120 tests offline against an in-memory backend, in
 | `pmp/runtime/a2a.py` | 6 | handoff envelope and the four receiver checks |
 | `pmp/runtime/agent.py` | 6 | executes a projection; FastAPI `/a2a`, `/run/{id}`, `/state` |
 | `pmp/runtime/mediator.py` | 7 | change stream on `rejections` → patch → contract v+1 |
-| `pmp/runtime/api.py`, `ui/index.html` | UI | serves the page, aggregates `/state` |
+| `pmp/update.py` | 8 | derivation index (`elements`, `derivations`) → graph delta → rebuild only what moved → contract v+1 |
+| `pmp/snapshot.py` | demo | runs everything once in memory and writes `ui/demo.json` |
+| `pmp/runtime/api.py`, `ui/index.html` | UI | the six-scene walkthrough over `ui/demo.json` |
 | `pmp/runtime/run.py` | 6, 7 | drives run 0001 and 0002 (in-process, HTTP, or `--in-memory`) |
 | `pmp/predicate.py` | all | the one predicate evaluator |
 | `pmp/spec.py`, `spec/*.schema.json` | all | every document validates against a JSON Schema |
 | `pmp/db.py`, `pmp/memstore.py` | all | single Atlas entry point; in-memory stand-in for tests |
 | `mock/STAGES.md` | spec | the expected output of every stage, which the tests assert |
 | `mock/stages/*.json` | fixtures | expected outputs and runtime fixtures, also the fallbacks |
-| `scripts/demo.sh`, `scripts/seed.sh` | demo | one command each |
+| `scripts/view.sh`, `scripts/demo.sh`, `scripts/seed.sh` | demo | one command each |
 
 ## What is real and what is mocked
 
@@ -149,8 +160,8 @@ and the human answers in the automated demo (defaults accepted; the interactive 
   proven on a skill file and an Arazzo workflow.
 - The aligner needs a capable model. `gpt-4.1` via OpenRouter reproduces the alignment table for about
   $0.25 per run; `gpt-4o-mini` did not. The fixture path exists so the demo never depends on it.
-- The design doc's change management (re-asking only the questions whose premises moved) is implemented
-  only for the runtime repair loop, not for arbitrary republishes.
+- Change management (§6) is implemented for policy and rule republishes with a worked threshold change;
+  reshaping changes that would re-run the aligner are classified but not exercised.
 - Placeholder signatures and no confidential computing: a compromised mediator is out of scope.
 
 ## What was built today
@@ -158,4 +169,5 @@ and the human answers in the automated demo (defaults accepted; the interactive 
 Everything in `pmp/`, `spec/`, `mock/stages/`, `scripts/`, `ui/` and `tests/`, in the order of the seven prompts
 in `PROMPTS.md`: a compiler for two input formats, an LLM aligner with vector search, a deterministic merge,
 a 15-check validator, the interview engine, projections with a privacy proof, certificates, two runtime
-agents, the self-healing mediator, the demo UI, and about 120 tests.
+agents, the self-healing mediator, the derivation index and incremental update, the precomputed six-scene
+walkthrough, and about 125 tests.

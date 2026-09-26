@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "mock" / "stages" / "6_fixtures.json"
 DEFAULT_USE_CASE = "bnpl_checkout_v1"
 Transport = Callable[[str, dict], dict]
+_LOG_SEQ = __import__("itertools").count(1)   # one monotonic counter for every agent in the process: true event order
 
 
 def load_fixtures(path: Path = FIXTURES) -> dict:
@@ -189,7 +190,7 @@ class Agent:
         return db.col("contracts").find_one({"_id": self.contract["_id"]}) if self.contract else None
 
     def _log(self, run: dict | None, event: str, detail: str, node: str | None = None) -> None:
-        entry = {"ts": now(), "org": self.org, "run": run["run"] if run else None, "node": node, "event": event, "detail": detail}
+        entry = {"n": next(_LOG_SEQ), "ts": now(), "org": self.org, "run": run["run"] if run else None, "node": node, "event": event, "detail": detail}
         self.log.append(entry)
         if run is not None:
             run["log"].append(entry)
@@ -203,7 +204,12 @@ class Agent:
 
     def start_run(self, run_id: str, inputs: dict | None = None) -> dict:
         inputs = inputs if inputs is not None else self.fixtures.get(run_id, {}).get("inputs", {})
+        prev = self.runs.get(run_id)
         run = self._new_run(run_id, inputs)
+        if prev:                                       # a retry keeps the earlier attempt's history
+            run["attempt"] = prev.get("attempt", 1) + 1
+            run["log"] = list(prev["log"])
+            self._log(run, "retry", f"attempt {run['attempt']} under contract v{self.contract['version'] if self.contract else '?'}")
         start = next((nid for nid, n in self.nodes.items() if not n.get("opaque") and not any(e["to"] == nid for e in (self.projection or {}).get("edges", []))), None)
         self._log(run, "start", f"run {run_id} from {start}")
         if start:

@@ -127,6 +127,10 @@ def create_app(use_case: str, urls: dict[str, str]):
     def index():
         return FileResponse(UI)
 
+    @app.get("/demo.json")
+    def demo_json():
+        return FileResponse(UI.parent / "demo.json", media_type="application/json")
+
     @app.get("/state")
     def state():
         if refresher.snapshot is None:

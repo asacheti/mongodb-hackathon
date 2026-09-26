@@ -86,7 +86,8 @@ wait_port "$A_URL" 40 && wait_port "$B_URL" 40 && wait_port "$API_URL" 40 \
 
 stage run-0001 "$PY" -m pmp.runtime.run --run 0001 --http --a-url "$A_URL" --b-url "$B_URL" --use-case "$USE_CASE"
 stage run-0002 "$PY" -m pmp.runtime.run --run 0002 --http --a-url "$A_URL" --b-url "$B_URL" --use-case "$USE_CASE"
-printf '[%s] done: seed -> signed contract -> run 0001 -> rejection -> contract v2 -> run 0002\n' "$(elapsed)"
+stage update   "$PY" -m pmp.update --use-case "$USE_CASE" --org A --policy large_order_approval --max-amount 15000
+printf '[%s] done: seed -> signed contract -> run 0001 -> rejection -> contract v2 -> run 0002 -> republish -> contract v3\n' "$(elapsed)"
 echo "UI: $API_URL"
 if [ "$WAIT" = "1" ]; then
   echo "services stay up for the UI; press Ctrl-C to stop"

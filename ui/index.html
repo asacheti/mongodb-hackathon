@@ -3,203 +3,345 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PMP mediator</title>
+<title>PMP walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1c2128; --muted:#6b7280; --line:#e5e7eb; --a:#0f766e; --b:#b45309; --m:#4f46e5;
-          --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --grey:#6b7280; }
-  * { box-sizing:border-box }
-  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif }
-  header { display:flex; align-items:center; gap:16px; padding:12px 20px; background:#111827; color:#fff; flex-wrap:wrap }
-  header h1 { font-size:16px; margin:0; letter-spacing:.02em }
-  header .sub { color:#9ca3af; font-size:12px }
-  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid transparent }
-  .pill.active { background:#dcfce7; color:var(--ok) } .pill.suspect { background:#fef3c7; color:var(--warn) }
-  .pill.superseded, .pill.none { background:#e5e7eb; color:var(--grey) }
-  .clock { font-variant-numeric:tabular-nums; font-size:18px; font-weight:700; margin-left:auto }
-  .clock small { display:block; font-size:10px; color:#9ca3af; font-weight:400; text-align:right }
-  .seg { display:inline-flex; border:1px solid #374151; border-radius:8px; overflow:hidden }
-  .seg button { background:transparent; color:#d1d5db; border:0; padding:6px 12px; cursor:pointer; font-size:12px }
-  .seg button.on { background:#fff; color:#111827; font-weight:600 } .seg button:disabled { opacity:.4; cursor:not-allowed }
-  .strip { display:flex; gap:6px; padding:10px 20px; background:#fff; border-bottom:1px solid var(--line); overflow-x:auto }
-  .chip { padding:6px 10px; border-radius:8px; border:1px solid var(--line); font-size:12px; white-space:nowrap; color:var(--muted); background:#fafafa }
-  .chip.done { border-color:#86efac; background:#f0fdf4; color:var(--ok) } .chip.now { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8 }
-  .chip b { font-weight:700 } .chip .n { opacity:.7; margin-left:4px }
-  main { display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:14px; padding:14px 20px }
-  @media (max-width: 1000px) { main { grid-template-columns:1fr } }
-  .col { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-height:300px }
-  .col h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 10px; display:flex; align-items:center; gap:8px }
-  .col.A h2 { color:var(--a) } .col.B h2 { color:var(--b) } .col.M h2 { color:var(--m) }
-  .dot { width:8px; height:8px; border-radius:50%; background:currentColor; display:inline-block }
-  ul.nodes { list-style:none; margin:0; padding:0 }
-  ul.nodes li { display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:6px; font-size:13px }
-  ul.nodes li .st { width:14px; height:14px; border-radius:50%; border:2px solid #d1d5db; flex:none }
-  ul.nodes li.done .st { background:var(--ok); border-color:var(--ok) } ul.nodes li.now .st { border-color:#2563eb; background:#bfdbfe }
-  ul.nodes li.done { color:#111 } ul.nodes li { color:var(--muted) }
-  ul.nodes li .tag { font-size:10px; padding:1px 6px; border-radius:999px; background:#ede9fe; color:#5b21b6; margin-left:auto }
-  ul.nodes li .tag.gate { background:#fef3c7; color:#92400e } ul.nodes li .tag.hand { background:#dbeafe; color:#1e40af }
-  .sealed { border:2px dashed #9ca3af; border-radius:12px; padding:14px; background:repeating-linear-gradient(135deg,#fafafa,#fafafa 8px,#f3f4f6 8px,#f3f4f6 16px) }
-  .sealed h3 { margin:0 0 6px; font-size:14px } .sealed .k { font-size:11px; text-transform:uppercase; color:var(--muted); margin-top:10px }
-  .sealed code { font-size:12px } .sealed .why { margin-top:12px; font-size:12px; color:var(--muted) }
-  table { width:100%; border-collapse:collapse; font-size:12px } th { text-align:left; color:var(--muted); font-weight:600; padding:4px 6px; border-bottom:1px solid var(--line) }
-  td { padding:4px 6px; border-bottom:1px solid #f1f5f9; vertical-align:top }
-  .v { font-weight:700 } .v.pass { color:var(--ok) } .v.fail { color:var(--bad) } .v.guarded { color:var(--warn) }
-  .sec { margin-top:14px } .sec h3 { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px }
-  .q { border-left:3px solid var(--m); padding:4px 8px; margin:6px 0; font-size:12px; background:#fafaff } .q b { color:var(--m) }
-  .q .ans { color:#374151 } .q .def { color:var(--muted); font-size:11px }
-  .rej { border-left:3px solid var(--bad); padding:4px 8px; margin:6px 0; font-size:12px; background:#fff7f7 }
-  .patch { border-left:3px solid var(--ok); padding:4px 8px; margin:6px 0; font-size:12px; background:#f6fff8 }
-  .runs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px } .runs .chip { padding:3px 8px }
-  #log { margin:0 20px 20px; background:#0b1020; color:#d1d5db; border-radius:12px; padding:12px 14px; height:260px; overflow:auto; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace }
-  #log .t { color:#6b7280 } #log .A { color:#5eead4 } #log .B { color:#fbbf24 } #log .M { color:#a5b4fc } #log .bad { color:#fca5a5 } #log .ok { color:#86efac }
-  .logh { display:flex; justify-content:space-between; padding:0 20px 6px; font-size:12px; color:var(--muted) }
-  .empty { color:var(--muted); font-size:12px; font-style:italic }
+  :root{--bg:#f5f6f8;--panel:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--soft:#f1f5f9;
+        --A:#0f766e;--A-bg:#ecfdf5;--A-line:#99f6e4;--B:#b45309;--B-bg:#fffbeb;--B-line:#fde68a;--M:#4338ca;--M-bg:#eef2ff;--M-line:#c7d2fe;
+        --ok:#15803d;--ok-bg:#dcfce7;--warn:#b45309;--warn-bg:#fef3c7;--bad:#b91c1c;--bad-bg:#fee2e2;--grey:#64748b;--grey-bg:#e2e8f0;
+        --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,sans-serif}
+  a{color:var(--M)}
+  code,.mono{font-family:var(--mono);font-size:12.5px}
+  /* header + stepper */
+  header{background:linear-gradient(120deg,#0b1020,#111c3a 60%,#1e1b4b);color:#fff;padding:22px 32px 0}
+  header .top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  header .tag{font-size:12px;color:#a5b4fc;font-weight:600;text-transform:uppercase;letter-spacing:.12em}
+  header .sub{color:#94a3b8;font-size:13px;margin-left:auto}
+  .stepper{display:flex;gap:6px;margin-top:18px;overflow-x:auto}
+  .stepper button{flex:1;min-width:120px;background:transparent;border:0;border-bottom:3px solid #2a3355;color:#94a3b8;padding:10px 6px 12px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;text-align:left;transition:.15s}
+  .stepper button .n{display:block;font-size:11px;color:#64748b;font-weight:700;letter-spacing:.1em}
+  .stepper button.on{color:#fff;border-bottom-color:#a5b4fc} .stepper button.done{color:#cbd5e1;border-bottom-color:#4f46e5}
+  .stepper button:hover{color:#fff}
+  main{max-width:1280px;margin:0 auto;padding:26px 32px 40px}
+  .scene{animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .scene h2{font-size:26px;margin:0 0 4px;letter-spacing:-.02em;font-weight:800}
+  .scene .lede{color:var(--muted);font-size:15px;margin:0 0 20px;max-width:900px}
+  .grid{display:grid;gap:16px} .g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:1fr 1fr 1fr} .grid>*{min-width:0}
+  .card{min-width:0;overflow:hidden} .kv dd{overflow-wrap:anywhere} .card table{table-layout:auto} .card>div,.card>table{max-width:100%}
+  td,code{overflow-wrap:anywhere;word-break:break-word}
+  @media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px}
+  .card.A{border-top:4px solid var(--A)} .card.B{border-top:4px solid var(--B)} .card.M{border-top:4px solid var(--M)}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+  .badge.A{background:var(--A-bg);color:var(--A);border:1px solid var(--A-line)} .badge.B{background:var(--B-bg);color:var(--B);border:1px solid var(--B-line)}
+  .badge.M{background:var(--M-bg);color:var(--M);border:1px solid var(--M-line)} .badge.ok{background:var(--ok-bg);color:var(--ok)} .badge.warn{background:var(--warn-bg);color:var(--warn)}
+  .badge.bad{background:var(--bad-bg);color:var(--bad)} .badge.grey{background:var(--grey-bg);color:var(--grey)} .badge.mono{font-family:var(--mono);font-weight:600}
+  .kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:13px} .kv dt{color:var(--muted)} .kv dd{margin:0}
+  pre.code{background:#0b1020;color:#e2e8f0;border-radius:10px;padding:12px 14px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.5;margin:10px 0 0;max-height:280px}
+  pre.code .k{color:#93c5fd} pre.code .c{color:#64748b}
+  table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--soft);vertical-align:top} tr:last-child td{border-bottom:0}
+  .num{font-family:var(--mono);text-align:right}
+  .stat{display:flex;gap:18px;flex-wrap:wrap;margin:8px 0 12px} .stat div{font-size:12px;color:var(--muted)} .stat b{display:block;font-size:22px;color:var(--ink);font-weight:800;letter-spacing:-.02em}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .ladder{display:inline-flex;gap:3px;vertical-align:middle} .ladder i{width:9px;height:9px;border-radius:2px;background:var(--grey-bg);display:inline-block} .ladder i.on{background:var(--M)}
+  .finding{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--soft)} .finding:last-child{border-bottom:0}
+  .finding .code{font-family:var(--mono);font-weight:700;font-size:13px} .finding .meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .q{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#fff;margin-bottom:12px}
+  .q .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .q .bubble{background:var(--M-bg);border:1px solid var(--M-line);border-radius:12px 12px 12px 3px;padding:10px 14px;font-size:14px;margin:6px 0}
+  .q .ans{background:var(--soft);border-radius:3px 12px 12px 12px;padding:10px 14px;font-size:14px;margin:6px 0 6px 24px}
+  .q .ans.A{background:var(--A-bg)} .q .ans.B{background:var(--B-bg)}
+  .q .who{font-size:12px;color:var(--muted);margin-left:24px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg button{background:transparent;border:0;padding:7px 14px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:var(--muted)}
+  .seg button.on{background:var(--ink);color:#fff}
+  svg text{font-family:Inter,system-ui,sans-serif}
+  .sealed{border:2px dashed #94a3b8;border-radius:14px;padding:16px;background:repeating-linear-gradient(135deg,#fafafa,#fafafa 8px,#f1f5f9 8px,#f1f5f9 16px)}
+  .timeline{display:grid;grid-template-columns:1fr 130px 1fr;gap:0;font-size:13px}
+  .timeline .row{display:contents}
+  .timeline .cell{padding:6px 10px;border-bottom:1px solid var(--soft);min-height:32px}
+  .timeline .mid{text-align:center;color:var(--muted);font-size:12px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  .timeline .hand{background:var(--M-bg);font-weight:700;color:var(--M);border-radius:8px;margin:3px 0}
+  .timeline .hand.bad{background:var(--bad-bg);color:var(--bad)}
+  .timeline .nodeA{color:var(--A);font-weight:600} .timeline .nodeB{color:var(--B);font-weight:600;text-align:right}
+  .timeline .note{color:var(--muted);font-size:12px;font-weight:400}
+  details summary{cursor:pointer;color:var(--M);font-size:12px;font-weight:600}
+  .callout{border-left:4px solid var(--M);background:var(--M-bg);padding:10px 14px;border-radius:0 10px 10px 0;font-size:14px;margin:10px 0}
+  .callout.bad{border-color:var(--bad);background:var(--bad-bg)} .callout.ok{border-color:var(--ok);background:var(--ok-bg)} .callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px} .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  footer{display:flex;justify-content:space-between;align-items:center;max-width:1280px;margin:0 auto;padding:0 32px 40px}
+  footer button{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer} footer button:disabled{opacity:.3;cursor:default}
+  footer .hint{color:var(--muted);font-size:12px}
+  .empty{color:var(--muted);font-style:italic}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>PMP · Procedure Merge Profile</h1><div class="sub" id="usecase">bnpl_checkout_v1 · Northwind (merchant) × Lakeside (lender) · mediator on MongoDB Atlas</div></div>
-  <span id="contract" class="pill none">no contract yet</span>
-  <div class="seg" id="viewas">
-    <button data-v="M" class="on">Mediator view</button>
-    <button data-v="A">View as Northwind</button>
-    <button data-v="B">View as Lakeside</button>
-  </div>
-  <div class="clock"><span id="clock">00:00</span><small id="clocksub">seed → run 0002</small></div>
+  <div class="top"><span class="tag">InterLock · MongoDB .local NYC</span><h1>PMP · Procedure Merge Profile</h1><span class="sub" id="sub"></span></div>
+  <div class="stepper" id="stepper"></div>
 </header>
-<div class="strip" id="strip"></div>
-<main>
-  <section class="col A"><h2><span class="dot"></span>Northwind · ORG_A · merchant</h2><div id="colA"></div></section>
-  <section class="col M"><h2><span class="dot"></span>Atlas mediator</h2><div id="colM"></div></section>
-  <section class="col B"><h2><span class="dot"></span>Lakeside · ORG_B · lender</h2><div id="colB"></div></section>
-</main>
-<div class="logh"><span>Activity (agents, mediator, contracts) · polled every second</span><span id="logmeta"></span></div>
-<pre id="log"></pre>
+<main id="main"><div class="empty">loading demo.json…</div></main>
+<footer><button id="prev">← Back</button><span class="hint">← → arrow keys move between steps · everything shown is precomputed</span><button id="next">Next →</button></footer>
 
 <script>
-(function () {
-  const $ = (id) => document.getElementById(id);
+(async function () {
+  const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const ORG = { A: "Northwind", B: "Lakeside" };
-  let view = "M", state = null, seedTs = null, doneTs = null, logPinned = true;
+  const ORG = { A: "Northwind", B: "Lakeside", M: "Mediator" };
+  const money = (n) => "$" + Number(n).toLocaleString("en-US");
+  const short = (id) => String(id).replace(/^[AB]\./, "");
+  const h = (hash) => hash ? `<code>${esc(String(hash).slice(0, 19))}…</code>` : "";
+  const badge = (t, cls = "grey") => `<span class="badge ${cls}">${esc(t)}</span>`;
+  const verdict = (v) => badge(v, v === "pass" ? "ok" : v === "guarded" ? "warn" : "bad");
+  const ladder = (r) => `<span class="ladder" title="rung ${r} of 6">${[1,2,3,4,5,6].map((i) => `<i class="${i <= (r || 0) ? "on" : ""}"></i>`).join("")}</span>`;
+  const when = (ts) => ts ? String(ts).replace("T", " ").replace("Z", "") : "";
 
-  document.querySelectorAll("#viewas button").forEach((b) => b.addEventListener("click", () => {
-    if (b.disabled) return; view = b.dataset.v;
-    document.querySelectorAll("#viewas button").forEach((x) => x.classList.toggle("on", x === b)); render();
-  }));
-  $("log").addEventListener("scroll", () => { const el = $("log"); logPinned = el.scrollTop + el.clientHeight >= el.scrollHeight - 8; });
+  let D;
+  try { D = await (await fetch("demo.json", { cache: "no-store" })).json(); }
+  catch (e) { $("#main").innerHTML = `<div class="callout bad">Could not load <code>demo.json</code>. Serve this folder over HTTP: <code>python -m pmp.runtime.api</code> or <code>python -m http.server 8000 --directory ui</code>.</div>`; return; }
+  $("#sub").textContent = `${D.use_case} · Northwind (merchant) × Lakeside (lender) · precomputed ${when(D.generated_at)} · alignments: ${D.models.alignments_source} (${D.models.llm})`;
 
-  const STAGES = [
-    ["seed", (s) => !!s.stopwatch.seed_ts], ["compile", (s) => s.stages.compile >= 2], ["align", (s) => s.stages.align > 0],
-    ["merge", (s) => s.stages.merge >= 1], ["validate", (s) => s.stages.validate > 0], ["decide", (s) => s.stages.decide > 0],
-    ["contract", (s) => s.stages.contract > 0],
-    ["run 0001", (s) => (s.runs["0001"] || []).some((h) => h.edge === "h3" && h.status === "accepted")],
-    ["run 0002", (s) => (s.runs["0002"] || []).some((h) => h.edge === "h3" && h.status === "accepted")],
+  // ------------------------------------------------------------ lane graph (SVG)
+  function laneGraph(nodesA, nodesB, edges, opts = {}) {
+    const sealed = opts.sealed;                  // "A" | "B" | null
+    const order = (nodes) => {                   // adapters and decision nodes slide in after the node that feeds them
+      const base = nodes.filter((n) => !n.origin && n.kind !== "decision"), extra = nodes.filter((n) => n.origin || n.kind === "decision");
+      for (const x of extra) {
+        const ein = edges.find((e) => e.to === x.id && e.type !== "boundary"), eout = edges.find((e) => e.from === x.id && e.type !== "boundary");
+        let i = base.findIndex((n) => n.id === (ein || {}).from);
+        if (i >= 0) base.splice(i + 1, 0, x);                                   // after the node that feeds it
+        else { i = base.findIndex((n) => n.id === (eout || {}).to); base.splice(i >= 0 ? i : base.length, 0, x); }   // else before the node it feeds
+      }
+      return base;
+    };
+    const A = sealed === "A" ? [] : order(nodesA), B = sealed === "B" ? [] : order(nodesB);
+    const sp = 118, W = Math.max(A.length, B.length, 6) * sp + 60, yA = 70, yB = 250, bw = 104, bh = 40;
+    const pos = {}; A.forEach((n, i) => pos[n.id] = { x: 40 + i * sp, y: yA, org: "A" }); B.forEach((n, i) => pos[n.id] = { x: 40 + i * sp, y: yB, org: "B" });
+    const sealBox = sealed ? { x: 40, y: sealed === "A" ? yA : yB, w: W - 100, h: bh + 18 } : null;
+    const at = (id) => pos[id] || (sealBox && ((sealed === "A" && id.startsWith("A.")) || (sealed === "B" && id.startsWith("B.")) || id.includes("opaque")) ? { x: sealBox.x + sealBox.w / 2 - bw / 2, y: sealBox.y, org: sealed, sealed: true } : null);
+    const fill = { A: "var(--A-bg)", B: "var(--B-bg)" }, stroke = { A: "var(--A)", B: "var(--B)" };
+    let svg = "";
+    for (const e of edges) {
+      const f = at(e.from), t = at(e.to); if (!f || !t) continue;
+      const boundary = e.type === "boundary", comp = e.type === "compensation" || e.type === "failure";
+      const color = comp ? "var(--bad)" : boundary ? "var(--M)" : "#94a3b8", dash = comp ? ' stroke-dasharray="5 4"' : "";
+      if (f.org === t.org && !boundary) {
+        const x1 = f.x + bw, y1 = f.y + bh / 2, x2 = t.x, y2 = t.y + bh / 2;
+        if (t.x > f.x && t.x - f.x <= sp + 2) svg += `<line x1="${x1}" y1="${y1}" x2="${x2 - 4}" y2="${y2}" stroke="${color}" stroke-width="1.6" marker-end="url(#arr)"${dash}/>`;
+        else { const up = f.org === "A" ? -1 : 1, cy = f.y + (t.x >= f.x ? up * 44 : -up * 44) + bh / 2, sx = t.x >= f.x ? f.x + bw : f.x + bw / 2, ex = t.x >= f.x ? t.x : t.x + bw / 2;
+               svg += `<path d="M${sx},${f.y + bh / 2} Q${(sx + ex) / 2},${cy} ${ex},${t.y + (t.x >= f.x ? bh / 2 : (up < 0 ? 0 : bh))}" fill="none" stroke="${color}" stroke-width="1.4" marker-end="url(#arr)"${dash}/>`; }
+      } else {
+        const down = f.org === "A"; const x1 = f.x + bw / 2, y1 = down ? f.y + bh : f.y, x2 = t.x + bw / 2, y2 = down ? t.y : t.y + bh;
+        svg += `<path d="M${x1},${y1} C${x1},${(y1 + y2) / 2} ${x2},${(y1 + y2) / 2} ${x2},${y2}" fill="none" stroke="${color}" stroke-width="2" marker-end="url(#arr)"${dash}/>`;
+        const lbl = boundary ? e.id : (e.condition || "").replace(/^.*== '?/, "").replace(/'$/, "");
+        svg += `<rect x="${(x1 + x2) / 2 - 22}" y="${(y1 + y2) / 2 - 9}" width="44" height="18" rx="9" fill="#fff" stroke="${color}"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 + 4}" font-size="11" font-weight="700" fill="${color}" text-anchor="middle">${esc(lbl.slice(0, 8))}</text>`;
+      }
+    }
+    for (const [id, p] of Object.entries(pos)) {
+      const n = [...nodesA, ...nodesB].find((x) => x.id === id); const st = opts.status ? opts.status(n) : null;
+      const cls = n.origin ? "url(#hatch)" : fill[p.org], sw = st === "done" ? 2.4 : 1.4, sc = st === "done" ? "var(--ok)" : st === "changed" ? "var(--bad)" : stroke[p.org];
+      const r = n.kind === "terminal" ? 20 : n.kind === "human_gate" ? 4 : n.kind === "decision" ? 20 : 8;
+      svg += `<g><rect x="${p.x}" y="${p.y}" width="${bw}" height="${bh}" rx="${r}" fill="${cls}" stroke="${sc}" stroke-width="${sw}"${n.visibility && n.visibility !== "internal" ? ' stroke-dasharray="0"' : ""}/>`;
+      if (n.visibility && n.visibility !== "internal") svg += `<circle cx="${p.x + bw - 8}" cy="${p.y + 8}" r="3.5" fill="var(--M)"><title>${esc(n.visibility)}</title></circle>`;
+      const name = short(n.name || id); const t1 = name.length > 16 ? name.slice(0, 15) + "…" : name;
+      svg += `<text x="${p.x + bw / 2}" y="${p.y + bh / 2 + 4}" font-size="10.5" font-weight="600" fill="${stroke[p.org]}" text-anchor="middle"><title>${esc(name)}${n.origin ? " · adapter from " + esc(n.origin) : ""}${n.pre ? "\npre: " + esc(n.pre) : ""}</title>${esc(t1)}</text></g>`;
+    }
+    if (sealBox) { const org = sealed; svg += `<rect x="${sealBox.x}" y="${sealBox.y - 9}" width="${sealBox.w}" height="${sealBox.h}" rx="14" fill="url(#seal)" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4"/><text x="${sealBox.x + sealBox.w / 2}" y="${sealBox.y + bh / 2 + 4}" text-anchor="middle" font-size="13" font-weight="800" fill="#475569">${esc(ORG[org])} · sealed: one opaque node, boundary interface only</text>`; }
+    svg += `<text x="10" y="${yA + bh / 2 + 4}" font-size="11" font-weight="800" fill="var(--A)" transform="rotate(-90 10,${yA + bh / 2 + 4})" text-anchor="middle">A</text><text x="10" y="${yB + bh / 2 + 4}" font-size="11" font-weight="800" fill="var(--B)" transform="rotate(-90 10,${yB + bh / 2 + 4})" text-anchor="middle">B</text>`;
+    return `<svg viewBox="0 0 ${W} 330" width="100%" style="min-width:${Math.min(W, 1100)}px;display:block"><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+      <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#ede9fe"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c4b5fd" stroke-width="2"/></pattern>
+      <pattern id="seal" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(135)"><rect width="12" height="12" fill="#f8fafc"/><rect width="6" height="12" fill="#eef2f7"/></pattern></defs>${svg}</svg>
+      <div class="legend"><span><i style="background:var(--A-bg);border:1px solid var(--A)"></i>Northwind step</span><span><i style="background:var(--B-bg);border:1px solid var(--B)"></i>Lakeside step</span><span><i style="background:#ede9fe;border:1px solid #c4b5fd"></i>adapter (from an answer)</span><span><i style="background:var(--M);border-radius:50%"></i>handoff-visible</span><span style="color:var(--M);font-weight:700">— h1 h2 h3 boundary</span><span style="color:var(--bad);font-weight:700">- - compensation</span></div>`;
+  }
+
+  // ------------------------------------------------------------ scenes
+  const scenes = [
+    { key: "input", title: "Input", render: sceneInput },
+    { key: "merge", title: "Merge", render: sceneMerge },
+    { key: "interview", title: "Interview", render: sceneInterview },
+    { key: "contract", title: "Contract", render: sceneContract },
+    { key: "run", title: "Run", render: sceneRun },
+    { key: "update", title: "Update", render: sceneUpdate },
   ];
-  const counts = (s) => ({ seed: "", compile: s.stages.compile, align: s.stages.align, merge: s.stages.merge, validate: s.stages.validate,
-                           decide: s.stages.decide, contract: s.stages.contract, "run 0001": (s.runs["0001"] || []).length, "run 0002": (s.runs["0002"] || []).length });
+  const qs = new URLSearchParams(location.search);
+  const state = { i: 0, view: qs.get("view") || "M", run: qs.get("run") || "0001" };
 
-  function fmt(ms) { const t = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
-  function tickClock() {
-    if (!seedTs) { $("clock").textContent = "00:00"; return; }
-    const end = doneTs ? new Date(doneTs) : new Date();
-    $("clock").textContent = fmt(end - new Date(seedTs));
-    $("clocksub").textContent = doneTs ? "seed → run 0002 ✓" : "seed → run 0002 · running";
+  function orgCard(org) {
+    const o = D.input.orgs[org];
+    const nodes = o.nodes.map((n) => `<tr><td><code>${esc(n.name)}</code>${n.origin ? "" : ""}</td><td>${badge(n.kind, n.kind === "human_gate" ? "warn" : "grey")}${n.visibility !== "internal" ? " " + badge(n.visibility, "M") : ""}</td><td><code>${esc(n.tool || "")}</code>${n.money ? " " + badge("money", "warn") : ""}</td><td class="mono" style="font-size:11.5px;color:var(--muted)">${esc(n.pre || "")}</td></tr>`).join("");
+    return `<div class="card ${org}"><h3>${badge(ORG[org] + " · ORG_" + org + " · " + o.role, org)} <span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0">${esc(o.format)}</span></h3>
+      <div class="kv"><dt>Source</dt><dd><a href="${esc(o.source.url)}" target="_blank" rel="noopener">${esc(o.source.label)}</a></dd><dt>File</dt><dd><code>${esc(o.file)}</code> · v${esc(o.version)}</dd><dt>Hash</dt><dd>${h(o.hash)}</dd></div>
+      <div class="stat"><div><b>${o.counts.nodes}</b>nodes</div><div><b>${o.counts.edges}</b>transitions</div><div><b>${o.counts.handoff_visible}</b>handoff-visible</div><div><b>${o.counts.human_gates}</b>human gate</div><div><b>${o.counts.tools}</b>tools</div><div><b>${o.confidential_notes_count}</b>confidential notes</div></div>
+      <details open><summary>excerpt of the input as written</summary><pre class="code">${esc(o.excerpt)}</pre></details>
+      <details><summary>the ${o.counts.nodes} compiled nodes</summary><table><tr><th>step</th><th>kind</th><th>tool</th><th>precondition</th></tr>${nodes}</table></details>
+      ${o.lint.length ? `<div class="callout warn" style="margin-top:12px"><b>${o.lint.length} compile finding${o.lint.length > 1 ? "s" : ""}</b>${o.lint.map((f) => `<div style="margin-top:6px"><code>${esc(f.check)}</code> <span class="mono" style="color:var(--muted)">${esc(f.scope)}</span><br>${esc(f.detail)}</div>`).join("")}</div>` : ""}
+    </div>`;
   }
-  setInterval(tickClock, 250);
+  function sceneInput() {
+    const A = D.input.orgs.A, B = D.input.orgs.B;
+    return `<h2>1 · Two procedures, two formats</h2><p class="lede">Each organization submits its <em>full</em> procedure to the mediator. A merchant writes agent skills; a lender publishes an API workflow spec. Both are real: the steps come from Stripe's invoicing guide and from the OpenAPI Initiative's own Arazzo example. The compiler turns both into the same typed graph, and finds two mistakes in the published lender file on the way.</p>
+      <div class="grid g2">${orgCard("A")}${orgCard("B")}</div>
+      <div class="card" style="margin-top:16px"><h3>Compiled graphs, before anything is merged</h3>${laneGraph(A.nodes, B.nodes, [...A.edges, ...B.edges])}
+      <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Filled dots mark the steps each org has tagged <code>handoff_out</code> / <code>handoff_in</code>: the only ones the partner may ever see. Northwind's step 7 was prose ("orders of USD 10,000 or more need a manager's approval"); the compiler made it a human gate with a policy object (LINT-02).</p></div>`;
+  }
 
-  function renderStrip(s) {
-    let firstOpen = true;
-    $("strip").innerHTML = STAGES.map(([name, done]) => {
-      const d = done(s), now = !d && firstOpen; if (!d) firstOpen = false;
-      return `<span class="chip ${d ? "done" : now ? "now" : ""}"><b>${esc(name)}</b><span class="n">${esc(counts(s)[name])}</span></span>`;
+  function sceneMerge() {
+    const M = D.merge, m = M.merged;
+    const al = M.alignments.map((a) => `<tr><td><code>${esc(a.a_name)}</code></td><td><code>${esc(a.b_name)}</code></td><td class="num">${a.sigma.toFixed(2)}</td><td>${esc(a.iota)}</td><td class="mono" style="font-size:11.5px">${esc(a.tau)}</td><td>${badge(a.proposal, a.proposal === "distinct" ? "grey" : a.proposal === "on_failure" ? "bad" : "M")}</td><td class="num">${a.confidence.toFixed(2)}</td><td style="font-size:12.5px;color:var(--muted)">${esc(a.rationale)}</td></tr>`).join("");
+    const passes = M.all_results.filter((r) => r.verdict === "pass").map((r) => `${r.check}${r.scope.startsWith("h") ? " " + r.scope : ""}`);
+    const findings = M.findings.map((f) => `<div class="finding"><div><div class="code">${esc(f.check)}</div>${verdict(f.verdict)}</div><div><div>${esc(f.detail)}</div><div class="meta">${ladder(f.rung)} rung ${f.rung}${f.rung_from ? ` (from ${f.rung_from})` : ""} · ${badge("stakes " + f.stakes, f.stakes === "high" ? "bad" : "ok")} ${f.stakes_reason ? `<span>${esc(f.stakes_reason)}</span>` : ""} · owner ${badge(ORG[f.owner_org] || f.owner_org, f.owner_org === "A" || f.owner_org === "B" ? f.owner_org : "M")} · scope <code>${esc(f.scope)}</code></div></div></div>`).join("");
+    return `<h2>2 · Align, merge, validate</h2><p class="lede">An LLM, shown both graphs with their data shapes, tool effects and neighbourhoods, proposes which steps correspond. That is the only place a model is used; everything after is deterministic. The merge unions the graphs over the proposals and the validator runs its registry. Seven findings, one of which resolves by rule.</p>
+      <div class="card M"><h3>Alignment proposals ${badge(D.models.alignments_source === "atlas-live" ? "live model output · " + D.models.llm : "fixture", "M")} ${badge("candidates from Atlas Vector Search", "grey")}</h3>
+      <table><tr><th>Northwind step</th><th>Lakeside step</th><th>σ</th><th>ι I/O</th><th>τ effects</th><th>proposal</th><th>conf</th><th>model rationale</th></tr>${al}</table>
+      <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">Guards around the model: τ comes from the declared tool effects, a shared name floors σ, nothing side-effecting ever merges, and <code>provides_input</code> is only allowed from a handoff-out step into a handoff-in step.</p></div>
+      <div class="card" style="margin-top:16px"><h3>Merged graph v1 <span style="margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500">${m.counts.nodes} nodes · ${m.counts.edges} edges · ${m.counts.boundary} boundary edges · h_merge ${h(m.hash)}</span></h3>
+      ${laneGraph(m.nodes.filter((n) => n.org === "A"), m.nodes.filter((n) => n.org === "B"), m.edges)}
+      <table style="margin-top:10px"><tr><th>edge</th><th>direction</th><th>from → to</th><th>declared purpose</th></tr>${m.boundary.map((b) => `<tr><td><b>${esc(b.id)}</b></td><td>${esc(b.direction)}</td><td><code>${esc(short(b.from))}</code> → <code>${esc(short(b.to))}</code></td><td style="color:var(--muted)">${esc(b.purpose_out || b.purpose_in || "")}</td></tr>`).join("")}
+      <tr><td><i>failure candidate</i></td><td>B → A</td><td><code>${esc(short(m.failure_candidates[0].from))}</code> → <code>${esc(short(m.failure_candidates[0].to))}</code></td><td style="color:var(--muted)">not an edge yet: a decline path is a customer-facing decision (FAIL-01 asks)</td></tr></table></div>
+      <div class="card M" style="margin-top:16px"><h3>Validator findings on v1 <span style="margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500">${M.findings.length} findings · ${passes.length} other checks pass</span></h3>${findings}
+      <div class="chips" style="margin-top:12px">${passes.map((p) => badge(p + " ✓", "ok")).join("")}</div>
+      <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">Rung is the position on the resolution ladder: 1 lattice rule · 2 adapter · 3 reorder · 4 compensation edge · 5 ask a person · 6 reject. Stakes are <b>low</b> only when the fix is derivable from the two submissions alone and touches no money, personal data or customer messaging. STR-01 reachability runs as an Atlas <code>$graphLookup</code>.</p></div>`;
+  }
+
+  function sceneInterview() {
+    const I = D.interview;
+    const d = I.decisions.map((x) => `<div class="q" style="border-color:var(--ok-bg);background:#f7fdf9"><div class="head">${badge(x.id, "ok")} ${badge(x.check + " on " + x.scope, "grey")} ${badge("rule: " + x.rule, "ok")} <span style="color:var(--muted);font-size:12.5px">resolved by the agent, nobody asked</span></div><div>requires_human_approval: A true, B unset → OR → <b>true</b>. max_amount: A USD 10,000, B unset → <b>USD 10,000</b>. Recorded as the boundary guard on h3.</div></div>`).join("");
+    const qs = I.questions.map((q) => `<div class="q"><div class="head">${badge(q._id, "M")} ${q.triggers.map((t) => badge("trigger " + t, "grey")).join(" ")} <span>→</span> ${badge(ORG[q.to_org] + " / " + q.to_role, q.to_org)} <span style="margin-left:auto">${q.accepted_default ? badge("default accepted", "ok") : badge("answered by " + q.answered_by.user, "warn")} <span style="color:var(--muted);font-size:12px">${when(q.ts).slice(11, 16)}</span></span></div>
+      <div class="bubble">${esc(q.text)}</div>
+      <div class="ans ${q.to_org}"><b>${esc(q.answer)}</b>${q.accepted_default ? "" : `<div style="font-size:12px;color:var(--muted);margin-top:4px">default was: ${esc(q.default)}</div>`}</div>
+      <div class="who">guardrails: ${q.guardrails.map((g) => badge(g.type + (g.edge ? " · " + g.edge : "") + (g.decision ? " · " + g.decision : "") + (g.node ? " · " + short(g.node._id) : ""), "M")).join(" ")}</div></div>`).join("");
+    const v2 = I.merged_v2;
+    const adapters = v2.adapters.map((a) => `<div class="card" style="padding:12px 14px"><div><b><code>${esc(short(a.id))}</code></b> ${badge("origin " + a.origin, "M")} ${badge(a.visibility, "grey")}</div><div style="font-size:13px;color:var(--muted);margin:6px 0">${esc(a.text.split(": ").slice(1).join(": ")).slice(0, 260)}</div>${a.transform ? `<div class="mono" style="font-size:12px">${a.transform.map((t) => esc(t.to + " = " + t.expr)).join("<br>")}</div>` : ""}${a.pre ? `<div class="mono" style="font-size:12px;margin-top:4px;color:var(--M)">pre: ${esc(a.pre)}</div>` : ""}</div>`).join("");
+    const bounds = v2.boundary.map((b) => `<tr><td><b>${esc(b.id)}</b></td><td><code>${esc(short(b.from))}</code> → <code>${esc(short(b.to))}</code></td><td class="mono" style="font-size:11.5px">${(b.allowlist || []).map(esc).join(", ") || "<i>none</i>"}</td><td class="mono" style="font-size:11.5px">${b.guard ? Object.entries(b.guard).map(([k, x]) => esc(k + ": " + (typeof x === "object" ? JSON.stringify(x) : x))).join("<br>") : "<i>none</i>"}</td></tr>`).join("");
+    return `<h2>3 · The merge interview</h2><p class="lede">Every high-stakes finding becomes exactly one question, sent to the organization that owns the decision, routed to the role its own file names for that topic, always with a default. Question text is built from findings and boundary fields only: nothing from either side's confidential notes ever reaches it. Five questions, three defaults, fifteen minutes.</p>
+      ${d}${qs}
+      <div class="card" style="margin-top:6px"><h3>Every answer became a guardrail · merged v2 <span style="margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500">${v2.counts.nodes} nodes · ${v2.counts.edges} edges · h_answers ${h(v2.inputs.h_answers)}</span></h3>
+      <div class="grid g2">${adapters}</div>
+      <table style="margin-top:12px"><tr><th>edge</th><th>from → to (after adapters)</th><th>allowlist</th><th>guard</th></tr>${bounds}</table>
+      <div class="callout ok" style="margin-top:12px">Re-validated: the seven findings are gone. The cycle disappears because "paid" is now defined at the boundary; the decline path exists as a compensation edge; the loan id crosses on h2 and is echoed on h3.</div></div>`;
+  }
+
+  function sceneContract() {
+    const C = D.contract, cert = C.certificate, c = C.contract;
+    const fam = {}; for (const x of cert.checks) (fam[x.check.split("-")[0]] ||= []).push(x);
+    const famChips = Object.entries(fam).map(([k, xs]) => `<span class="badge ${xs.every((x) => x.verdict === "pass") ? "ok" : "warn"}">${esc(k)} ×${xs.length}${xs.some((x) => x.locality === "mediator") ? " · mediator" : ""}</span>`).join(" ");
+    const guarded = cert.checks.filter((x) => x.verdict === "guarded").map((x) => `<tr><td><code>${esc(x.check)}</code></td><td><b>${esc(x.scope)}</b></td><td>${verdict(x.verdict)}</td><td style="font-size:12.5px">${esc(x.evidence)}</td></tr>`).join("");
+    const pa = C.projections.A, pb = C.projections.B;
+    const aNodes = pa.nodes.filter((n) => !n.opaque), bNodes = pb.nodes.filter((n) => !n.opaque);
+    const view = state.view; const sealedOther = view === "A" ? "B" : view === "B" ? "A" : null;
+    const local = (p) => p.edges.filter((e) => !e.from.includes("opaque") && !e.to.includes("opaque"));
+    // cross-boundary edges: the projection points them at the opaque node; the contract knows the real endpoints
+    const real = (e) => { if (e.type === "boundary") { const b = c.boundary_edges.find((x) => x.id === e.id); return b ? { ...e, from: b.from, to: b.to } : e; }
+                          const f = c.failure_edges.find((x) => e.from.includes("opaque") ? true : x.from === e.from); return f ? { ...e, from: f.from } : e; };
+    const cross = pa.edges.filter((e) => e.type === "boundary" || e.type === "compensation");
+    const edgesAll = sealedOther ? [...local(sealedOther === "B" ? pa : pb), ...(sealedOther === "B" ? pa : pb).edges.filter((e) => e.type === "boundary" || e.type === "compensation")]
+                                 : [...local(pa), ...local(pb), ...cross.map(real)];
+    const proj = sealedOther ? C.projections[view] : null; const opaque = proj ? proj.opaque : null;
+    const ifaceRows = (arr, verb) => arr.map((e) => `<tr><td><b>${esc(e.edge)}</b></td><td>${verb}</td><td class="mono" style="font-size:11.5px">${e.fields.map(esc).join(", ")}</td><td class="mono" style="font-size:11.5px">${esc(e.guard || "")}</td><td style="font-size:12.5px;color:var(--muted)">${esc(e.purpose || "")}</td></tr>`).join("");
+    const sealedPanel = opaque ? `<div class="sealed"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:15px">${esc(opaque.name)}</b> ${badge("what " + ORG[view] + " receives", "M")} <span style="color:var(--muted);font-size:13px">${esc(opaque.text)}</span></div>
+        <table style="margin-top:10px"><tr><th>edge</th><th></th><th>fields</th><th>guard</th><th>purpose</th></tr>${ifaceRows(opaque.interface.receives, "receives")}${ifaceRows(opaque.interface.returns, "returns")}</table>
+        <div style="margin-top:8px;font-size:13px">terminal outcomes: ${opaque.interface.outcomes.map((o) => badge(o, o === "completed" ? "ok" : "bad")).join(" ")} · ${proj.invariants.map((i) => badge(i.check + " " + i.verdict, "ok")).join(" ")} ${badge("PRIV-01 " + proj.privacy.verdict, "ok")}</div>
+        <div style="margin-top:6px;font-size:12.5px;color:var(--muted)">None of ${ORG[sealedOther]}'s internal steps, tools or notes is in this projection. The mediator checked every internal node name, node text, confidential note and tool of ${ORG[sealedOther]} against ${ORG[view]}'s projection JSON: ${esc(proj.privacy.detail)}.</div></div>` : "";
+    return `<h2>4 · Certificate, contract, projections</h2><p class="lede">The mediator re-runs the whole registry, issues a certificate listing every check and its result, and hands each org its projection: its own steps plus what its own answers added, with the partner collapsed into one opaque node. Each org re-runs the local checks and four invariants on its slice before it countersigns.</p>
+      <div class="grid g2">
+        <div class="card M"><h3>Certificate ${badge(cert.certificate_id, "mono")}</h3>
+          <div class="stat"><div><b>${cert.checks.length}</b>checks</div><div><b>${cert.checks.filter((x) => x.verdict === "pass").length}</b>pass</div><div><b>${cert.checks.filter((x) => x.verdict === "guarded").length}</b>guarded</div><div><b>${cert.checks.filter((x) => x.locality === "local").length}</b>local</div><div><b>${cert.checks.filter((x) => x.locality === "mediator").length}</b>mediator-only</div></div>
+          <div class="chips">${famChips}</div>
+          <table style="margin-top:12px"><tr><th>check</th><th>scope</th><th></th><th>evidence</th></tr>${guarded}</table>
+          <div class="kv" style="margin-top:12px">${Object.entries(cert.inputs).map(([k, v]) => `<dt><code>${esc(k)}</code></dt><dd>${h(v)}</dd>`).join("")}</div>
+          <div style="margin-top:12px;font-size:13px">signatures: ${["mediator", "A", "B"].map((s) => badge((s === "mediator" ? "mediator" : ORG[s]) + " · " + cert.signatures[s].kid + " · " + when(cert.signatures[s].signed_at).slice(11), s === "mediator" ? "M" : s)).join(" ")}<div style="color:var(--muted);font-size:12px;margin-top:4px">mediator signs first; each org countersigns after re-running ${cert.signatures.A.local_checks_rerun} local checks and its four invariants. Signatures are placeholders in this prototype.</div></div>
+        </div>
+        <div class="card"><h3>Contract ${badge(c.id + " · v" + c.version + " · " + c.status, "ok")}</h3>
+          <table><tr><th>edge</th><th>dir</th><th>what may cross</th><th>guard</th></tr>${c.boundary_edges.map((e) => `<tr><td><b>${esc(e.id)}</b></td><td>${esc(e.direction)}</td><td class="mono" style="font-size:11.5px">${e.allowlist.map(esc).join(", ")}</td><td class="mono" style="font-size:11.5px">${esc(e.guard || "")}${e.policy ? `<div style="color:var(--muted)">${esc(JSON.stringify(e.policy))}</div>` : ""}</td></tr>`).join("")}
+          <tr><td><i>failure</i></td><td>B → A</td><td colspan="2">on <code>${esc(c.failure_edges[0].on)}</code>: the lender's decline terminal falls back to the merchant's card payment</td></tr></table>
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">The allowlist is the entire boundary schema: every non-sensitive field plus the sensitive ones the owner allowed, minus everything the sender declared as <code>never_send</code>.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>Projections <span class="seg" style="margin-left:auto">${["M", "A", "B"].map((v) => `<button data-view="${v}" class="${state.view === v ? "on" : ""}">${v === "M" ? "Mediator sees both" : "View as " + ORG[v]}</button>`).join("")}</span></h3>
+        <div class="stat"><div><b>${pa.counts.nodes}</b>nodes in projection A <span style="font-size:11px">(${pa.counts.own} own incl. ${pa.counts.adapters} adapters + 1 opaque)</span></div><div><b>${pb.counts.nodes}</b>nodes in projection B <span style="font-size:11px">(${pb.counts.own} own + 1 opaque)</span></div><div><b>=</b>h_boundary_interface ${h(c.hashes.h_boundary_interface)} identical in both</div></div>
+        ${laneGraph(aNodes, bNodes, edgesAll, { sealed: sealedOther })}
+        ${sealedPanel}
+      </div>`;
+  }
+
+  function sceneRun() {
+    const R = D.run, rid = state.run, r = R[rid];
+    const byTs = [...r.events].sort((a, b) => (a.n || 0) - (b.n || 0) || String(a.ts).localeCompare(String(b.ts)));
+    const rows = byTs.filter((e) => !["load", "start", "waiting"].includes(e.event)).map((e) => {
+      const isA = e.org === "A"; const hand = e.event.startsWith("handoff");
+      if (hand) { const bad = e.event.includes("rejected"); return `<div class="row"><div class="cell"></div><div class="cell mid hand ${bad ? "bad" : ""}" title="${esc(e.detail)}">${esc(e.detail.split(" ")[0])} ${e.event === "handoff_sent" ? (isA ? "→" : "←") : e.event === "handoff_accepted" ? "✓" : "✗"}<div class="note">${esc(e.event.replace("handoff_", ""))} ${esc(e.detail.split(":")[0].replace(/^h\d /, ""))}</div></div><div class="cell"></div></div>`; }
+      const txt = `<span class="node${e.org}">${esc(short(e.node || ""))}</span> <span class="note">${esc(e.event === "tool" ? e.detail.split(" -> ")[0] : e.event === "gate" ? e.detail : e.event === "adapter" ? "adapter: " + e.detail.slice(0, 80) : e.event === "completed" ? "✓ " + e.detail : e.event)}</span>`;
+      return `<div class="row"><div class="cell">${isA ? txt : ""}</div><div class="cell mid"></div><div class="cell" style="text-align:right">${isA ? "" : txt}</div></div>`;
     }).join("");
+    const handoffs = r.handoffs.map((x) => `<details style="margin:6px 0"><summary>${esc(x.edge)} · seq ${x.seq} · ${esc(ORG[x.sender])} → ${esc(ORG[x.receiver])} · ${x.status === "accepted" ? "✓ accepted" : "✗ " + (x.rejection ? x.rejection.code : "rejected")} · contract v${x.pmp.contract_version}</summary>
+        <pre class="code">${esc(JSON.stringify({ metadata: { pmp: x.pmp }, payload: x.payload }, null, 1))}</pre>${x.rejection ? `<div class="callout bad">rejection: <code>${esc(JSON.stringify({ code: x.rejection.code, missing: x.rejection.missing, field: x.rejection.field, expected: x.rejection.expected }))}</code></div>` : ""}</details>`).join("");
+    let story = "";
+    if (rid === "0002") {
+      const p = r.patch.plan.ops[0];
+      story = `<div class="grid g3" style="margin-top:16px">
+        <div class="card B"><h3>1 · Lakeside republishes</h3><div>${badge("customer.postalCode now required on h1", "B")}</div><p style="font-size:13px;color:var(--muted)">A change on the lender's side that the merchant never saw. In-flight runs finish on their version; the next h1 is checked against the new requirement.</p></div>
+        <div class="card" style="border-top:4px solid var(--bad)"><h3>2 · The receiver refuses</h3><div class="callout bad" style="margin:0"><b>${esc(r.rejection.code)}</b> on ${esc(r.rejection.edge)} · run ${esc(r.rejection.run)} seq ${r.rejection.seq}<br>missing <code>${r.rejection.missing.map(esc).join(", ")}</code></div><p style="font-size:13px;color:var(--muted)">Four receiver checks run in order: contract active, edge in projection, payload matches schema + allowlist, preconditions hold. The third fails. The contract goes <b>suspect</b>.</p></div>
+        <div class="card M"><h3>3 · The mediator repairs</h3><div style="font-size:13.5px">The change stream delivers the rejection. The mediator searches <b>Northwind's own data model</b>: no field named <code>postalCode</code>, but <code>${esc(p.input.path)}</code> is an <i>address</i>. It extends the adapter <code>${esc(short(p.adapter))}</code>: <code>${esc(p.transform.to)} = ${esc(p.transform.expr)}</code>, allowlists the field, re-validates, and issues <b>contract v2</b>.</div><div style="font-size:12px;color:var(--muted);margin-top:6px">countersign: A ${esc(r.patch.countersign.A)}; B ${esc(r.patch.countersign.B)}</div></div></div>
+        <div class="callout ok" style="margin-top:14px">Retry under contract v2: h1 now carries <code>customer.postalCode = "97201"</code>; accepted. ${badge("v1 superseded", "grey")} ${badge("v2 active · " + r.contract_v2.reason, "ok")}</div>`;
+    }
+    return `<h2>5 · Run it</h2><p class="lede">Each org's agent executes its projection with its own tools (stubbed here) and hands work across the boundary as A2A tasks: a <code>metadata.pmp</code> block with contract, certificate, edge, run and sequence, and a payload of only the allowlisted fields. Run 0001 is the happy path. Run 0002 shows what happens when the lender changes its mind after signing.</p>
+      <div class="seg" style="margin-bottom:14px">${["0001", "0002"].map((k) => `<button data-run="${k}" class="${state.run === k ? "on" : ""}">run ${k} · ${esc(R[k].title)}</button>`).join("")}</div>
+      <div class="card"><h3>${badge(ORG.A, "A")} <span style="margin-left:auto;margin-right:auto;text-transform:none;letter-spacing:0;font-weight:500">${byTs.length} events · contract v${r.contract_version}${r.rejections.length ? " · " + r.rejections.length + " rejection" : ""}</span> ${badge(ORG.B, "B")}</h3>
+        <div class="timeline">${rows}</div>
+        <div style="margin-top:12px"><b style="font-size:13px">Handoffs on the wire</b>${handoffs}</div></div>
+      ${story}`;
   }
 
-  function renderContract(s) {
-    const c = s.contract, el = $("contract");
-    if (!c) { el.className = "pill none"; el.textContent = "no contract yet"; }
-    else { el.className = "pill " + c.status; el.textContent = `${c.contract_id} · v${c.version} · ${c.status}` + (c.reason && c.reason !== "initial" ? ` · ${c.reason}` : ""); }
-    document.querySelectorAll("#viewas button[data-v='A'],#viewas button[data-v='B']").forEach((b) => { b.disabled = !c; b.title = c ? "" : "available after signing"; });
+  function sceneUpdate() {
+    const U = D.update, g = U.graph, ch = U.change;
+    const col = (items, kindLabel) => items.map((x) => `<div class="dnode ${x.status || (x.changed ? "changed" : "typed")}" data-id="${esc(x.id)}"><div class="lbl">${esc(x.label)}</div>${x.changed ? `<div class="delta"><s>${esc(String(x.old).replace(/^pre /, ""))}</s><br>→ ${esc(String(x.new).replace(/^pre /, ""))}</div>` : x.status ? `<div class="st">${esc(x.status)}${x.rebuild_fn ? " · " + esc(x.rebuild_fn) : ""}</div>` : ""}${x.result && typeof x.result === "string" ? `<div class="delta">${esc(x.result)}</div>` : ""}</div>`).join("");
+    const dstyle = `<style>.dgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px;position:relative}.dgrid h4{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.dnode{border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;background:#fff;position:relative}.dnode .lbl{font-weight:600}.dnode .st{font-size:11px;color:var(--muted);margin-top:2px}.dnode .delta{font-family:var(--mono);font-size:11px;margin-top:4px;color:var(--ink)}.dnode.changed{border-color:var(--bad);background:var(--bad-bg)}.dnode.rebuilt,.dnode.rerun{border-color:var(--warn);background:var(--warn-bg)}.dnode.resigned{border-color:var(--M);background:var(--M-bg)}.dnode.carried{opacity:.55}.dnode.typed{background:var(--soft)}</style>`;
+    const cert = U.certificate;
+    const st = (s) => cert.checks.filter((c) => c.status === s).length;
+    const tbl = `<table><tr><th></th><th>internal rule</th><th>handoff-step rule</th><th>context policy</th><th>answer (guardrail input)</th><th>tool access</th></tr>${U.table.map((r) => `<tr class="${r.change.toLowerCase() === ch.direction ? "" : ""}"><td><b>${esc(r.change)}</b>${r.change.toLowerCase() === ch.direction ? " " + badge("this change", "warn") : ""}</td><td>${esc(r.internal_rule)}</td><td>${esc(r.handoff_rule)}</td><td>${esc(r.policy)}</td><td>${esc(r.answer)}</td><td>${esc(r.tool)}</td></tr>`).join("")}</table>`;
+    return `<h2>6 · Change one thing without redoing everything</h2><p class="lede">Procedures change. The merge absorbs a change like a spreadsheet absorbs an edited cell: only the formulas that reference it recalculate. Every guardrail, check result and question records what it was built from, so a change is a reverse lookup. Here Northwind raises its approval threshold.</p>
+      <div class="grid g3">
+        <div class="card A"><h3>The republish</h3><div style="font-size:18px;font-weight:800">${esc(ORG[ch.org])} · <code>${esc(ch.policy)}</code></div><div style="font-size:22px;margin:4px 0"><s style="color:var(--muted)">${money(ch.old)}</s> → <b>${money(ch.new)}</b></div><div>${badge("direction: " + ch.direction, "warn")} ${badge("class " + U.class + " · boundary", "M")} ${badge("v" + ch.version.old + " → v" + ch.version.new, "grey")}</div><p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">${esc(U.direction_note)}.</p></div>
+        <div class="card"><h3>Graph delta ${badge(U.delta.changed.length + " elements changed", "bad")}</h3><table>${U.delta.changed.map((c) => `<tr><td><code>${esc(c.element_id)}</code></td><td>${badge(c.kind, "grey")}</td><td>${badge(c.direction, c.direction === "reshape" ? "grey" : "warn")}</td></tr>`).join("")}</table><div style="font-size:12px;color:var(--muted);margin-top:6px">delta hash ${h(U.delta.delta_hash)} · index: ${U.index_counts.elements} elements, ${U.index_counts.derivations} derivations</div></div>
+        <div class="card M"><h3>What the reverse lookup found</h3><div class="stat"><div><b>${U.rebuilt.length}</b>guardrails rebuilt</div><div><b>${U.carried_guardrails.length}</b>carried</div><div><b>${U.checks_rerun.length}</b>checks re-run</div><div><b>${U.checks_carried}</b>carried</div><div><b>${U.questions_reasked.length}</b>questions re-asked</div><div><b>${U.signatures_required.length}</b>signatures</div></div>
+          <div class="callout" style="margin:0">"${esc(U.friction)}." <span style="color:var(--muted);font-size:12.5px">Predicted before submitting the change: the reason to use the system instead of email.</span></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>One change traced through the derivation index</h3>${dstyle}
+        <div class="dgrid"><div><h4>typed in · elements</h4>${col(g.elements)}</div><div><h4>derived · guardrails</h4>${col(g.derived)}</div><div><h4>checks · outputs</h4>${col(g.outputs)}</div></div>
+        <div class="legend"><span><i style="background:var(--bad-bg);border:1px solid var(--bad)"></i>changed element</span><span><i style="background:var(--warn-bg);border:1px solid var(--warn)"></i>rebuilt / re-run</span><span><i style="background:var(--M-bg);border:1px solid var(--M)"></i>projection changed → re-sign</span><span><i style="background:#fff;border:1px solid var(--line);opacity:.55"></i>carried forward untouched</span></div>
+        <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Following the "built from" links out of the changed policy touches ${U.rebuilt.length} guardrails, ${U.checks_rerun.length} checks and both projections. The other guardrails, the checks that read them, and all five interview answers are carried forward, so nobody is asked anything. Alignment inputs are limited to names, descriptions, I/O and neighbourhood, so a rule or policy edit never re-runs the aligner.</p></div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card M"><h3>Certificate n+1 ${badge(cert.certificate_id, "mono")}</h3><div class="kv"><dt>supersedes</dt><dd><code>${esc(cert.supersedes)}</code></dd><dt>delta hash</dt><dd>${h(cert.delta_hash)}</dd><dt>checks re-run</dt><dd>${U.checks_rerun.map((c) => badge(c, "warn")).join(" ")}</dd><dt>checks carried</dt><dd>${st("carried")} from certificate n ${badge("all pass / guarded", "ok")}</dd><dt>questions re-asked</dt><dd>none · ${U.questions_carried.map((q) => badge(q + " carried as precedent", "grey")).join(" ")}</dd><dt>signatures required</dt><dd>${U.signatures_required.map((o) => badge(ORG[o], o)).join(" ")} <span style="color:var(--muted);font-size:12px">both visible slices changed: Northwind's gate, Lakeside's copy of the h3 guard</span></dd></div></div>
+        <div class="card"><h3>Contract v${U.contract_v3.version} · ${U.contract_v3.status}</h3><div class="kv"><dt>reason</dt><dd>${esc(U.contract_v3.reason)}</dd><dt>h3 guard</dt><dd><code>${esc(U.contract_v3.h3.guard)}</code></dd><dt>h3 policy</dt><dd><code>${esc(JSON.stringify(U.contract_v3.h3.policy))}</code></dd></div>
+          <div class="callout ok" style="margin-top:12px">Run 0001 again under v${U.rerun_under_v3.contract_version}: ${esc(U.rerun_under_v3.A.status)} (${esc(U.rerun_under_v3.A.outcome)}), ${U.rerun_under_v3.rejections.length} rejections. The h3 handoff carried the new guard result: <code>${esc(Object.keys(U.rerun_under_v3.guard_results)[0])} → ${esc(String(Object.values(U.rerun_under_v3.guard_results)[0]))}</code>.</div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>What a change costs, by kind and direction</h3>${tbl}<p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">Adding or removing a constraint is tightening or loosening under another name. Adding or removing structure always re-runs the structural checks; on the boundary it is a small new merge grafted onto the old one.</p></div>`;
   }
 
-  function latestRun(agent) { const runs = agent && agent.runs ? Object.keys(agent.runs).sort() : []; return runs.length ? agent.runs[runs[runs.length - 1]] : null; }
-
-  function orgColumn(org, s) {
-    const agent = (s.agents || {})[org] || {}, proj = (s.projections || {})[org];
-    if (agent.error && !proj) return `<p class="empty">agent ${org} not running (${esc(agent.error)})</p>`;
-    const run = latestRun(agent), done = new Set(run ? run.done : []), cur = run ? run.current : null;
-    const nodes = (agent.projection && agent.projection.nodes) || (proj ? proj.nodes : []);
-    const runChips = agent.runs ? Object.values(agent.runs).map((r) => `<span class="chip ${r.status === "completed" ? "done" : r.status === "rejected" ? "" : "now"}">run ${esc(r.run)} · ${esc(r.status)}${r.outcome ? " · " + esc(r.outcome) : ""}</span>`).join("") : "";
-    const li = nodes.filter((n) => !n.opaque).map((n) => {
-      const cls = done.has(n.id) ? "done" : n.id === cur ? "now" : "";
-      const tag = n.origin ? `<span class="tag">adapter · ${esc(n.origin)}</span>` : n.kind === "human_gate" ? `<span class="tag gate">human gate</span>`
-                : (n.visibility || "").startsWith("handoff") ? `<span class="tag hand">${esc(n.visibility)}</span>` : "";
-      return `<li class="${cls}"><span class="st"></span>${esc(n.name)}${tag}</li>`;
-    }).join("");
-    const inv = proj ? `<div class="sec"><h3>local invariants · contract v${proj.contract_version}</h3>${proj.invariants.map((i) => `<span class="chip ${i.verdict === "pass" ? "done" : ""}">${esc(i.check)} ${esc(i.verdict)}</span>`).join(" ")} <span class="chip ${proj.privacy === "pass" ? "done" : ""}">PRIV-01 ${esc(proj.privacy || "?")}</span></div>` : "";
-    return `<div class="runs">${runChips || '<span class="empty">no runs yet</span>'}</div><ul class="nodes">${li || '<li class="empty">projection not loaded</li>'}</ul>${inv}`;
-  }
-
-  function sealedBox(partner, s) {
-    const me = partner === "A" ? "B" : "A", proj = (s.projections || {})[me];
-    if (!proj || !proj.opaque) return `<p class="empty">available after signing</p>`;
-    const o = proj.opaque, it = o.interface;
-    const list = (arr, verb) => arr.length ? arr.map((e) => `<div><b>${esc(e.edge)}</b> ${verb} <code>${esc((e.fields || []).join(", "))}</code>${e.guard ? `<div class="def">guard: <code>${esc(e.guard)}</code></div>` : ""}${e.purpose ? `<div class="def">${esc(e.purpose)}</div>` : ""}</div>`).join("") : `<span class="empty">none</span>`;
-    return `<div class="sealed"><h3>${esc(ORG[partner])} · sealed</h3>
-      <div>One opaque node. ${esc(ORG[me])}'s projection carries only this boundary interface: what goes in, what comes out, how it can end.</div>
-      <div class="k">receives</div>${list(it.receives, "←")}
-      <div class="k">returns</div>${list(it.returns, "→")}
-      <div class="k">terminal outcomes</div><code>${esc(it.outcomes.join(" | "))}</code>
-      <div class="why">None of ${esc(ORG[partner])}'s private chain, tools or notes are here (PRIV-01 ${esc(proj.privacy || "?")}, INV-1..4 ${proj.invariants.every((i) => i.verdict === "pass") ? "pass" : "check"}).</div></div>`;
-  }
-
-  function mediatorColumn(s) {
-    const f = (s.findings || []).filter((x) => x.stage === "validate");
-    const findings = f.length ? `<table><tr><th>check</th><th>verdict</th><th>scope</th><th>stakes</th><th>resolved</th></tr>${f.map((x) =>
-      `<tr><td>${esc(x.check)}</td><td class="v ${esc(x.verdict)}">${esc(x.verdict)}</td><td>${esc(x.scope)}</td><td>${esc(x.stakes || "")}</td><td>${esc(x.resolved_by || "–")}</td></tr>`).join("")}</table>` : `<p class="empty">no findings yet</p>`;
-    const qs = (s.questions || []).map((q) => `<div class="q"><b>${esc(q._id)}</b> ${esc(q.trigger)} → ${esc(ORG[q.to_org])}/${esc(q.to_role)} ${q.accepted_default ? '<span class="def">(default accepted)</span>' : ""}<div>${esc(q.text)}</div><div class="ans">A: ${esc(q.answer || "pending")}</div></div>`).join("");
-    const contracts = (s.contracts || []).map((c) => `<span class="pill ${esc(c.status)}">v${c.version} ${esc(c.status)}${c.reason && c.reason !== "initial" ? " · " + esc(c.reason) : ""}</span>`).join(" ");
-    const rejs = (s.rejections || []).map((r) => `<div class="rej"><b>${esc(r.code)}</b> on ${esc(r.edge)} · run ${esc(r.run)} seq ${esc(r.seq)} · receiver ${esc(ORG[r.receiver])}${r.missing ? ` · missing <code>${esc(r.missing.join(", "))}</code>` : ""}${r.field ? ` · <code>${esc(r.field)}</code>` : ""}</div>`).join("");
-    const patches = (s.merge_log || []).filter((e) => e.type === "patch").map((e) => `<div class="patch"><b>patch → contract v${esc(e.contract_version)}</b> (supersedes v${esc(e.supersedes)}) · ${esc(e.status)}${(e.plan && e.plan.ops || []).map((o) => `<div>${esc(o.op)} ${esc(o.adapter || "")}: <code>${esc(o.transform ? o.transform.to + " = " + o.transform.expr : "")}</code> <span class="def">from ${esc(o.found_in || "own catalog")}</span></div>`).join("")}</div>`).join("");
-    const cert = s.contract ? `<div class="def">certificate ${esc(s.contract.certificate_id)} · ${esc(s.certificate_checks)} checks</div>` : "";
-    return `<div class="sec"><h3>contracts</h3>${contracts || '<span class="empty">none</span>'}${cert}</div>
-      <div class="sec"><h3>validation v1 · ${f.length} findings</h3>${findings}</div>
-      <div class="sec"><h3>merge interview</h3>${qs || '<p class="empty">no questions yet</p>'}</div>
-      <div class="sec"><h3>runtime</h3>${rejs || '<p class="empty">no rejections</p>'}${patches}</div>`;
-  }
-
-  function renderLog(s) {
-    const rows = [];
-    for (const org of ["A", "B"]) for (const e of ((s.agents || {})[org] || {}).log || []) rows.push({ ts: e.ts, who: org, txt: `${e.run ? "run " + e.run + " · " : ""}${e.node ? e.node + " · " : ""}${e.event}: ${e.detail}`, cls: /reject|fail/.test(e.event) ? "bad" : /accepted|completed/.test(e.event) ? "ok" : "" });
-    for (const r of s.rejections || []) rows.push({ ts: r.ts, who: "M", txt: `rejection ${r.code} on ${r.edge} (run ${r.run}, seq ${r.seq}); contract → suspect`, cls: "bad" });
-    for (const e of s.merge_log || []) if (e.type === "patch") rows.push({ ts: e.ts, who: "M", txt: `mediator patch → contract v${e.contract_version} active, v${e.supersedes} superseded`, cls: "ok" });
-    for (const c of s.contracts || []) rows.push({ ts: c.issued_at, who: "M", txt: `contract v${c.version} issued (${c.reason})`, cls: "ok" });
-    if (s.stopwatch.seed_ts) rows.push({ ts: s.stopwatch.seed_ts, who: "M", txt: "seed: collections reset, vector index ready", cls: "" });
-    rows.sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
-    const el = $("log");
-    el.innerHTML = rows.slice(-150).map((r) => `<div><span class="t">${esc(String(r.ts || "").replace("T", " ").replace("Z", ""))}</span> <span class="${r.who}">${r.who === "M" ? "mediator" : ORG[r.who]}</span> <span class="${r.cls}">${esc(r.txt)}</span></div>`).join("");
-    $("logmeta").textContent = `${rows.length} events`;
-    if (logPinned) el.scrollTop = el.scrollHeight;
-  }
-
+  // ------------------------------------------------------------ navigation
   function render() {
-    if (!state) return;
-    const s = state;
-    renderContract(s); renderStrip(s);
-    $("colA").innerHTML = view === "B" ? sealedBox("A", s) : orgColumn("A", s);
-    $("colB").innerHTML = view === "A" ? sealedBox("B", s) : orgColumn("B", s);
-    $("colM").innerHTML = mediatorColumn(s);
-    renderLog(s);
+    const s = scenes[state.i];
+    $("#stepper").innerHTML = scenes.map((x, i) => `<button class="${i === state.i ? "on" : i < state.i ? "done" : ""}" data-i="${i}"><span class="n">STEP ${i + 1}</span>${esc(x.title)}</button>`).join("");
+    $("#main").innerHTML = `<div class="scene" id="scene-${s.key}">${s.render()}</div>`;
+    $("#prev").disabled = state.i === 0; $("#next").disabled = state.i === scenes.length - 1;
+    $("#next").textContent = state.i === scenes.length - 1 ? "Done" : `Next: ${scenes[state.i + 1].title} →`;
+    document.querySelectorAll("#stepper button").forEach((b) => b.addEventListener("click", () => { state.i = +b.dataset.i; render(); window.scrollTo(0, 0); }));
+    document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; render(); }));
+    document.querySelectorAll("[data-run]").forEach((b) => b.addEventListener("click", () => { state.run = b.dataset.run; render(); }));
+    location.hash = s.key;
   }
-
-  async function poll() {
-    try {
-      const r = await fetch("/state", { cache: "no-store" }); state = await r.json();
-      seedTs = state.stopwatch.seed_ts; doneTs = state.stopwatch.done_ts; $("usecase").textContent = `${state.use_case_id} · Northwind (merchant) × Lakeside (lender) · mediator on MongoDB Atlas`;
-      render();
-    } catch (e) { $("logmeta").textContent = "state unavailable: " + e; }
-  }
-  poll(); setInterval(poll, 1000);
+  $("#prev").addEventListener("click", () => { if (state.i > 0) { state.i--; render(); window.scrollTo(0, 0); } });
+  $("#next").addEventListener("click", () => { if (state.i < scenes.length - 1) { state.i++; render(); window.scrollTo(0, 0); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") $("#next").click(); if (e.key === "ArrowLeft") $("#prev").click(); });
+  const start = scenes.findIndex((s) => "#" + s.key === location.hash); if (start >= 0) state.i = start;
+  render();
 })();
 </script>
 </body>
