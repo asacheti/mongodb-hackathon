@@ -1,62 +1,88 @@
 # PMP: Procedure Merge Profile
 
-Two organizations each have a private, step-by-step procedure. For one shared job, a mediator on
-MongoDB Atlas turns the two into a single signed, executable joint procedure that both companies'
-agents can run, handing work back and forth, **without either company reading the other's playbook**.
+**Two companies. Two private playbooks. One signed joint procedure, without either side reading the other's.**
 
-Built in one day at the MongoDB Harness Engineering & Model Wrangling hackathon, NYC, 26 Sep 2026.
+Built in one day at the MongoDB Harness Engineering & Model Wrangling hackathon (.local NYC, 26 Sep 2026).
 
-## The use case
+## The problem
 
-`bnpl_checkout_v1`: a merchant's Stripe invoicing procedure meets a lender's buy-now-pay-later loan
-workflow. Both inputs are real:
+When two organizations have to work together on one job, each already has a step-by-step procedure for
+its half. Reconciling the two is done by email today: weeks of "what do you send us?", "what counts as
+paid?", "who converts the units?". Both procedures are commercial assets, so neither side wants to hand
+the other its playbook. And once agents execute these procedures, a wrong handoff is a wrong API call.
 
-| Org | Format | Source |
-|---|---|---|
-| Northwind Outdoor (merchant, `A`) | `SKILL.md` with typed YAML steps | Stripe, *Integrate with the Invoicing API* |
-| Lakeside BNPL (lender, `B`) | Arazzo 1.0.0 workflow + a merge-profile sidecar | OpenAPI Initiative, `examples/1.0.0/bnpl-arazzo.yaml`, verbatim |
+## What PMP does
 
-The company names are invented; the procedures are not. The compiler even finds two mistakes in the
-published Arazzo example (a step reading its own output, an undeclared loan id).
+A trusted mediator on MongoDB Atlas takes both procedures in full, lines up the steps that correspond,
+joins the two into one graph, checks that the result is sound, asks each company a handful of questions
+only where it cannot decide alone, and issues a **signed contract**. Each company gets back **only its own
+slice**, with the partner collapsed into a single opaque box that says what goes in, what comes out, and
+how it can end. At run time each company's agent executes its slice with its own tools and hands typed
+payloads across the boundary. A handoff that breaks the agreed conditions is refused, the contract is
+flagged, and the mediator repairs it.
 
-## What happens
+Privacy holds **between the two organizations**, not from the mediator. That is the same trust model as a
+data clean room.
+
+## The worked example (real inputs)
+
+| Org | Role | Procedure | Source |
+|---|---|---|---|
+| Northwind Outdoor (`A`) | merchant | `mock/inputs/northwind/SKILL.md`: a Claude-style skill with typed YAML steps | Stripe, *Integrate with the Invoicing API* |
+| Lakeside BNPL (`B`) | lender | `mock/inputs/lakeside/bnpl-arazzo.yaml` + `merge-profile.yaml` sidecar | OpenAPI Initiative, Arazzo 1.0.0 example, used verbatim |
+
+The company names are invented; the procedures are not. Two formats on purpose: a merchant writing agent
+skills and a lender publishing an API workflow spec would never share one. The compiler normalises both
+into the same typed graph, and along the way finds two real mistakes in the published Arazzo example (a
+step reading its own output; a loan id no step declares).
+
+## What the demo shows, stage by stage
 
 ```
-compile ─▶ align ─▶ merge ─▶ validate ─▶ decide ─▶ contract ─▶ runtime (agents + mediator)
- typed     LLM +    union    17 checks   1 rule    certificate  A2A handoffs, 4 receiver
- graphs    vector   h1 h2 h3 7 findings  5 Qs      projections  checks, rejection ▶ patch
+compile ─▶ align ─▶ merge ─▶ validate ─▶ decide ─▶ contract ─▶ runtime
 ```
 
-1. **Compile.** Each input becomes a graph of typed nodes and transitions (I/O schemas, preconditions as a
-   JSON predicate AST, tool effects, policies). Two LINT findings on Lakeside, one on Northwind.
-2. **Align.** Every node text is embedded into `steps_vec`; `$vectorSearch` proposes candidate pairs; an LLM
-   proposes how each pair relates (`distinct | provides_input | relate | on_failure | merge`). Deterministic
-   guards keep the LLM honest: tool effects decide τ, shared names floor σ, nothing side-effecting merges,
-   input only crosses handoff-out → handoff-in. This is the **only** stage that calls an LLM.
-3. **Merge.** Deterministic union over the alignments. Three boundary edges: h1 basket → lender, h2 plan →
-   merchant, h3 fulfilment → lender. Written as one graph doc plus per-node adjacency docs.
-4. **Validate.** A check registry (IO, STR, PRE, POL, FAIL, DUP, TOOL, ...). STR-01 uses `$graphLookup`.
-   Version 1 yields exactly seven findings: unit mismatch, pii crossing, a "what counts as paid" deadlock, a
-   missing loan id, a policy lattice, a missing decline path, a near-duplicate step.
-5. **Decide.** Low stakes resolve by rule (the policy lattice). High stakes become one question each,
-   routed by the owner org's own `question_routing`, always with a default. Question text is generated from
-   findings and boundary fields only, never from `confidential_notes`. Answers compile to guardrails:
-   allowlists, two adapter nodes, a predicate, a compensation edge, a keep-both decision.
-6. **Contract.** Revalidate (35 checks, 2 guarded), build projection A (13 nodes) and projection B (11): own
-   nodes plus **one opaque node** for the partner carrying only the boundary interface. INV-1..4 locally,
-   PRIV-01 as mediator. Certificate with real sha256 inputs; contract v1 active.
-7. **Runtime.** Each org's agent runs its projection with stubbed tools and sends handoffs as A2A tasks. The
-   receiver runs four checks in order (contract active, edge in projection, schema + allowlist, preconditions).
-   Run 0001 completes. In run 0002 Lakeside republishes requiring a postal code; the first h1 is rejected
-   (`MISSING_FIELDS`), the contract goes suspect, the mediator finds the field in Northwind's own data model,
-   extends the adapter, revalidates, issues contract v2, and the retry passes.
+| # | Stage | What happens | Numbers |
+|---|---|---|---|
+| 1 | **Compile** | Both inputs become graphs of typed nodes and transitions: I/O schemas with units and sensitivity, preconditions as a JSON predicate AST, tool effect classes, policies. Money thresholds written in prose become policy objects. | A: 10 nodes / 11 edges. B: 10 nodes / 12 edges. 3 LINT findings. |
+| 2 | **Align** | Every step is embedded into `steps_vec`; **Atlas Vector Search** proposes candidates; an LLM proposes how each pair relates. Deterministic guards keep it honest: tool effects decide the effect class, shared names floor similarity, nothing side-effecting merges, input only crosses from a handoff-out step into a handoff-in step. **This is the only stage that calls an LLM.** | 5 alignments, none confirmed yet. |
+| 3 | **Merge + validate** | Deterministic union over the alignments; three boundary edges (basket → lender, plan → merchant, fulfilment → lender). A registry of checks runs; reachability uses **`$graphLookup`** over per-node adjacency docs. | 20 nodes, 26 edges. Exactly 7 findings: unit mismatch (cents vs major), pii crossing with no allowlist, a "what counts as paid" deadlock, a missing loan id, a policy lattice, a missing decline path, a near-duplicate step. |
+| 4 | **Decide** | Low stakes resolve by rule (stricter policy wins). Each high-stakes finding becomes one question, routed by the owner org's own routing table, always with a default. Question text is built from findings and boundary fields only; confidential notes never reach it. Answers compile to guardrails. | 1 rule decision, 5 questions (4 to Northwind, 1 to Lakeside), 3 defaults accepted. Guardrails: 3 allowlists, 2 adapter nodes, 1 predicate, 1 compensation edge, 1 keep-both decision. |
+| 5 | **Contract** | Revalidate. Build projection A and projection B: own nodes plus one opaque partner node carrying only the boundary interface. Each org checks four local invariants; the mediator checks that nothing of the partner leaked. Certificate with real sha256 over every input. | 35 checks: 33 pass, 2 guarded. Projection A 13 nodes, B 11. Contract v1 active. |
+| 6 | **Runtime** | Each org's agent executes its projection (tools stubbed from fixtures) and sends A2A-shaped handoffs. The receiver runs four checks in order: contract active, edge in projection, payload matches schema + allowlist, preconditions hold. | Run 0001 (USD 2,780): h1, h2, h3 accepted. |
+| 7 | **Self-repair** | Lakeside republishes requiring a postal code. The first h1 is rejected (`MISSING_FIELDS`), the contract goes *suspect*. The mediator reads the rejection from an **Atlas change stream**, finds `customer.shipping_address` in Northwind's own data model, extends Northwind's adapter, revalidates, issues contract v2 and supersedes v1. The retry passes. | Run 0002: 1 rejection, contract v2, completed. |
 
-## Atlas features used
+End to end, seed to run 0002, takes about 90 seconds on the venue network.
 
-- **Vector Search** (`steps_vec_idx`, 1536-dim cosine, filtered by `org_id` / `use_case_id`) for alignment candidates.
-- **`$graphLookup`** over per-node adjacency docs in `merged` for reachability (STR-01).
-- **Change streams** on `rejections`: the mediator reacts to a runtime rejection and republishes the contract.
-- Eleven collections, every document carrying `use_case_id` and, where it belongs to one org, `org_id`.
+## The UI
+
+`http://127.0.0.1:8000` while the demo runs. Three columns: Northwind, the Atlas mediator, Lakeside. A
+pipeline strip, the contract pill (active / suspect / superseded, with version), a stopwatch from seed
+to run 0002, and an activity log polled every second. The **View as** toggle is the point of the whole
+system: switch to "View as Northwind" and Lakeside collapses into one sealed box showing only the
+boundary interface. Nothing of the lender's private chain, tools, or notes is there, and a mediator check
+(PRIV-01) proves it.
+
+## MongoDB Atlas features used
+
+- **Vector Search** (`steps_vec_idx`: 1536-dim cosine, filtered by `org_id` and `use_case_id`) for alignment candidates.
+- **`$graphLookup`** for reachability over the merged graph, stored as one graph document plus one adjacency document per node.
+- **Change streams** on `rejections`: the mediator is event-driven; a runtime rejection triggers the repair loop.
+- Eleven collections mirroring the pipeline (`submissions`, `steps_vec`, `alignments`, `merged`, `findings`,
+  `merge_questions`, `merge_log`, `contracts`, `projections`, `handoffs`, `rejections`). Every document carries
+  `use_case_id` and, where it belongs to one org, `org_id`, so one query answers "what does org A know?".
+
+## Design rules that held all day
+
+- **The LLM proposes; everything after it is deterministic.** Same inputs and same decision records give the
+  same merged graph, byte for byte. Hashes in the certificate make that checkable.
+- **Privacy between orgs, not from the mediator.** Each org gets its own projection; the partner is one sealed box.
+- **People are asked only when it matters.** Every question comes from a validator finding, goes to the org
+  that owns the decision, and carries a default. Five questions replaced what is normally weeks of email.
+- **Nothing is resolved by quietly deleting evidence.** A refused answer leaves a first-class conflict that blocks
+  the contract. Every finding names its rung on the resolution ladder (lattice → adapter → reorder →
+  compensation edge → ask → reject) and its stakes.
+- **Predicates are data.** One JSON AST, one evaluator (`pmp/predicate.py`), never an LLM.
 
 ## Run it
 
@@ -64,59 +90,72 @@ compile ─▶ align ─▶ merge ─▶ validate ─▶ decide ─▶ contract 
 python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # MONGODB_URI, OPENAI_API_KEY (+ OPENAI_BASE_URL for OpenRouter), PMP_DB=pmp
 
-scripts/demo.sh           # seed → ... → contract → agents + mediator + API → run 0001 → run 0002
-                          # UI at http://127.0.0.1:8000 ; add --fixture-align to skip the LLM
+scripts/demo.sh                    # the whole story; UI at http://127.0.0.1:8000; Ctrl-C to stop
+scripts/demo.sh --fixture-align    # same, skipping the LLM (deterministic, no key needed)
 ```
 
-Stage by stage:
+Stage by stage, if you want to watch each one:
 
 ```bash
-scripts/seed.sh                                    # reset the use case, create collections + vector index
+scripts/seed.sh                                              # reset the use case, collections, vector index
 python -m pmp.compile  --use-case bnpl_checkout_v1 --fixture
-python -m pmp.align    --use-case bnpl_checkout_v1 [--dry-run | --from-fixture]
+python -m pmp.align    --use-case bnpl_checkout_v1           # or --dry-run / --from-fixture
 python -m pmp.merge    --use-case bnpl_checkout_v1
 python -m pmp.validate --use-case bnpl_checkout_v1 --version 1
-python -m pmp.decide   --use-case bnpl_checkout_v1 [--answer-defaults | --answers mock/stages/4_answers.json]   # interactive otherwise
+python -m pmp.decide   --use-case bnpl_checkout_v1           # interactive; or --answer-defaults / --answers mock/stages/4_answers.json
 python -m pmp.contract --use-case bnpl_checkout_v1
-python -m pmp.runtime.run --run 0001 && python -m pmp.runtime.run --run 0002      # in-process, against Atlas
-python -m pmp.runtime.run --run 0002 --in-memory                                  # no Atlas at all
+python -m pmp.runtime.run --run 0001 && python -m pmp.runtime.run --run 0002     # in-process, against Atlas
+python -m pmp.runtime.run --run 0002 --in-memory                                 # no Atlas at all
 ```
 
-Tests: `pytest -q` (offline, in-memory backend, ~120 tests) and `pytest -m live` (Atlas + LLM).
+Tests: `pytest -q` runs about 120 tests offline against an in-memory backend, including both runtime runs.
+`pytest -m live` hits Atlas and the LLM.
 
-## Modules
+## Repository map
 
-| Module | Stage | Reads → writes |
+| Path | Stage | Reads → writes |
 |---|---|---|
-| `pmp/compile.py` | 1 | inputs → `submissions`, `findings` (LINT) |
-| `pmp/align.py` | 2 | `submissions` → `steps_vec`, `alignments` (LLM here, and only here) |
-| `pmp/merge.py` | 3a | `submissions`, `alignments` → `merged` (graph + adjacency docs) |
-| `pmp/validate.py` | 3b, 5 | `merged` → `findings` (check registry; `$graphLookup`) |
+| `pmp/compile.py` | 1 | inputs → `submissions`, `findings` (LINT-01/02) |
+| `pmp/align.py` | 2 | `submissions` → `steps_vec`, `alignments` (the only LLM call) |
+| `pmp/merge.py` | 3a | `submissions`, `alignments` → `merged` |
+| `pmp/validate.py` | 3b, 5 | `merged` → `findings` (15-check registry) |
 | `pmp/decide.py` | 4 | `findings` → `merge_questions`, `merge_log`, `merged` v2 |
-| `pmp/contract.py` | 5 | `merged` v2 → `contracts` (certificate), `projections` |
-| `pmp/runtime/a2a.py` | 6 | handoff envelope + the four receiver checks |
+| `pmp/contract.py` | 5 | `merged` v2 → `contracts` (with certificate), `projections` |
+| `pmp/runtime/a2a.py` | 6 | handoff envelope and the four receiver checks |
 | `pmp/runtime/agent.py` | 6 | executes a projection; FastAPI `/a2a`, `/run/{id}`, `/state` |
-| `pmp/runtime/mediator.py` | 6 | change stream on `rejections` → patch → contract v+1 |
-| `pmp/runtime/api.py` | 7 | serves `ui/index.html`, aggregates `/state` |
-| `pmp/runtime/run.py` | 6 | drives run 0001 / 0002 (in-process, HTTP, or `--in-memory`) |
-| `pmp/predicate.py` | all | the one predicate evaluator (no LLM, ever) |
+| `pmp/runtime/mediator.py` | 7 | change stream on `rejections` → patch → contract v+1 |
+| `pmp/runtime/api.py`, `ui/index.html` | UI | serves the page, aggregates `/state` |
+| `pmp/runtime/run.py` | 6, 7 | drives run 0001 and 0002 (in-process, HTTP, or `--in-memory`) |
+| `pmp/predicate.py` | all | the one predicate evaluator |
 | `pmp/spec.py`, `spec/*.schema.json` | all | every document validates against a JSON Schema |
 | `pmp/db.py`, `pmp/memstore.py` | all | single Atlas entry point; in-memory stand-in for tests |
+| `mock/STAGES.md` | spec | the expected output of every stage, which the tests assert |
+| `mock/stages/*.json` | fixtures | expected outputs and runtime fixtures, also the fallbacks |
+| `scripts/demo.sh`, `scripts/seed.sh` | demo | one command each |
 
-`mock/STAGES.md` is the spec each module is built to; `mock/stages/*.json` hold expected outputs and
-runtime fixtures (and serve as fallbacks: `pmp.align --from-fixture`).
+## What is real and what is mocked
 
-## Design rules that held all day
+Real: both input procedures, the compiler, the vector search, the LLM alignment, every check, the
+interview logic, the projections and privacy check, the hashes, the handoff protocol, the four receiver
+checks, the change-stream repair loop, and all of the numbers in the table above.
 
-- The LLM proposes; everything after it is deterministic. Same inputs + same decision records = same output, byte for byte.
-- Privacy holds between the two orgs, not from the mediator. Each org gets its own projection; the partner is one sealed box.
-- Nothing is resolved by quietly deleting evidence: a refused answer leaves a first-class conflict that blocks the contract.
-- Every finding names its rung on the resolution ladder (lattice → adapter → reorder → compensation edge → ask → reject) and its stakes.
+Mocked: the tools (Stripe, the warehouse, the lender's API return fixture data from `mock/stages/6_fixtures.json`),
+the signatures (placeholders; the mediator "signs" first, each org "countersigns" after re-running its local checks),
+and the human answers in the automated demo (defaults accepted; the interactive CLI asks for real).
+
+## Known limits
+
+- One use case. A second pair of procedures would exercise the compiler's generality, which has only been
+  proven on a skill file and an Arazzo workflow.
+- The aligner needs a capable model. `gpt-4.1` via OpenRouter reproduces the alignment table for about
+  $0.25 per run; `gpt-4o-mini` did not. The fixture path exists so the demo never depends on it.
+- The design doc's change management (re-asking only the questions whose premises moved) is implemented
+  only for the runtime repair loop, not for arbitrary republishes.
+- Placeholder signatures and no confidential computing: a compromised mediator is out of scope.
 
 ## What was built today
 
-Everything in `pmp/`, `spec/`, `mock/stages/`, `scripts/`, `ui/` and `tests/`: compiler for two input formats,
-LLM aligner with vector search, deterministic merge, a 15-check validator, the interview engine, projections
-with privacy checks, certificates, two runtime agents, the self-healing mediator loop, the demo UI, and ~120
-tests. The LLM defaults to `gpt-4.1` via OpenRouter (about $0.25 per alignment run); `gpt-4o-mini` was not
-good enough to reproduce the alignment table.
+Everything in `pmp/`, `spec/`, `mock/stages/`, `scripts/`, `ui/` and `tests/`, in the order of the seven prompts
+in `PROMPTS.md`: a compiler for two input formats, an LLM aligner with vector search, a deterministic merge,
+a 15-check validator, the interview engine, projections with a privacy proof, certificates, two runtime
+agents, the self-healing mediator, the demo UI, and about 120 tests.
