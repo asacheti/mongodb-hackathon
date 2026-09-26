@@ -28,8 +28,11 @@ def has(path: str, ctx: dict) -> bool:
 def _val(arg: Any, ctx: dict) -> Any:
     if isinstance(arg, dict) and "op" in arg:
         return evaluate(arg, ctx)
-    if isinstance(arg, str) and has(arg, ctx):
-        return resolve(arg, ctx)
+    if isinstance(arg, str):
+        if has(arg, ctx):
+            return resolve(arg, ctx)
+        if "." in arg:
+            return None  # a dotted string is a field path; absent path reads as null, never as a literal
     return arg
 
 def evaluate(pred: dict | None, ctx: dict) -> bool:
@@ -56,7 +59,10 @@ def evaluate(pred: dict | None, ctx: dict) -> bool:
         return a in (b or [])
     if a is None or b is None:
         return False
-    return {"lt": a < b, "lte": a <= b, "gt": a > b, "gte": a >= b}[op]
+    try:
+        return {"lt": a < b, "lte": a <= b, "gt": a > b, "gte": a >= b}[op]
+    except TypeError:  # e.g. comparing a string to a number: not ordered, so not satisfied
+        return False
 
 def fields_referenced(pred: dict | None) -> set[str]:
     """All field paths a predicate reads. Used by PRE-01..03 to see what a receiver needs."""
