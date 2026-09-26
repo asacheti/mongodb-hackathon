@@ -13,18 +13,18 @@
   --a:#1E7F86; --a-soft:#DDEFF0; --a-ink:#145E63;
   --b:#B5651D; --b-soft:#F6E7D8; --b-ink:#7A4210;
   --c:#5B4FBF; --c-soft:#E6E2F7; --c-ink:#3F35A0;
-  --warn:#A33A2E; --warn-soft:#F7E1DD; --ok:#2E7D4F; --ok-soft:#DDEFE3; --amber:#8A5A00; --amber-soft:#FFF1CF;
+  --warn:#A33A2E; --warn-soft:#F7E1DD; --warn-faint:#FBF0EE; --warn-dim:#D9A79F; --ok:#2E7D4F; --ok-soft:#DDEFE3; --amber:#8A5A00; --amber-soft:#FFF1CF;
   --code:#EEF0EA; --halo:#FFFFFF;
   --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; --disp:Manrope,system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#12161C; --surface:#1A2029; --surface-2:#1F2630; --ink:#E6E9EE; --muted:#9AA3B0; --line:#2E3641; --line-soft:#262E39;
   --a:#5CC3CA; --a-soft:#173A3D; --a-ink:#9EDDE1; --b:#E39A5C; --b-soft:#3E2A18; --b-ink:#F2C39A; --c:#A79CF0; --c-soft:#2A2547; --c-ink:#C9C2F7;
-  --warn:#F08A7D; --warn-soft:#3F2320; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; } }
+  --warn:#F08A7D; --warn-soft:#3F2320; --warn-faint:#2A1F1D; --warn-dim:#7A4B45; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; } }
 :root[data-theme="dark"]{
   --bg:#12161C; --surface:#1A2029; --surface-2:#1F2630; --ink:#E6E9EE; --muted:#9AA3B0; --line:#2E3641; --line-soft:#262E39;
   --a:#5CC3CA; --a-soft:#173A3D; --a-ink:#9EDDE1; --b:#E39A5C; --b-soft:#3E2A18; --b-ink:#F2C39A; --c:#A79CF0; --c-soft:#2A2547; --c-ink:#C9C2F7;
-  --warn:#F08A7D; --warn-soft:#3F2320; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; }
+  --warn:#F08A7D; --warn-soft:#3F2320; --warn-faint:#2A1F1D; --warn-dim:#7A4B45; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; }
 
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.45}
@@ -90,7 +90,7 @@ details.notes{display:block} details.notes summary{cursor:pointer;display:flex;a
 .pill.line{border-color:var(--line);color:var(--muted)} .pill.dash{border:1px dashed var(--line);color:var(--muted)}
 .pill.solid-ink{background:var(--ink);color:var(--bg)}
 
-pre.src{margin:0;padding:12px 14px;background:var(--code);font-family:var(--mono);font-size:11px;line-height:1.5;overflow:auto;max-height:190px;white-space:pre;border-bottom:1px solid var(--line-soft)}
+pre.src{margin:0;padding:12px 14px;background:var(--code);font-family:var(--mono);font-size:11px;line-height:1.5;overflow:auto;max-height:150px;white-space:pre;border-bottom:1px solid var(--line-soft)}
 .srchead{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 0}
 .graphwrap{overflow-x:auto;padding:8px 10px}
 .graphwrap svg{display:block;width:100%;height:auto;min-width:960px;font-family:var(--sans)}
@@ -128,7 +128,7 @@ pre.src{margin:0;padding:12px 14px;background:var(--code);font-family:var(--mono
 .lane .lt{font-family:var(--disp);font-weight:700;font-size:11.5px}
 .lane.A .lt{fill:var(--a)} .lane.B .lt{fill:var(--b)}
 .lane.A .bg{fill:var(--a-soft);opacity:.45} .lane.B .bg{fill:var(--b-soft);opacity:.45}
-.fade{opacity:0;pointer-events:none;transition:opacity .45s}
+.fade{opacity:0!important;pointer-events:none;transition:opacity .45s}
 .show{opacity:1;pointer-events:auto;transition:opacity .45s}
 .dim{opacity:.28;transition:opacity .45s}
 svg .halo{paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round}
@@ -237,7 +237,8 @@ svg .halo{paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin
 .ba{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px}
 .ba .was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--warn)}
 .ba .arr{color:var(--muted)}
-.ba .now{font-weight:600;padding:3px 8px;border-radius:4px;background:var(--c-soft);color:var(--c-ink)}
+.ba .now{font-weight:600;padding:3px 8px;border-radius:4px;background:var(--warn-soft);color:var(--warn)}
+.chip.red{background:var(--warn-soft);color:var(--warn)}
 .chip b{font-weight:600}
 .chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.bad{background:var(--warn-soft);color:var(--warn)}
 .change{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:6px;background:var(--surface);text-align:left;font-size:12.5px;width:100%}
@@ -250,8 +251,16 @@ svg .halo{paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin
 .impact .row .pill{margin-left:auto}
 .impact ul{margin:0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
 .node.hl rect{stroke:var(--c);stroke-width:2.2;fill:var(--c-soft)} .node.hl text{fill:var(--ink)}
-.edge.hl path{stroke:var(--c);stroke-width:2.4} .edge.hl text{fill:var(--c-ink)} .edge.hl rect{stroke:var(--c);stroke-width:1.8;fill:var(--c-soft)}
+.edge.hl path{stroke:var(--c);stroke-width:2.4;marker-end:url(#ar-c)} .edge.hl text{fill:var(--c-ink)} .edge.hl rect{stroke:var(--c);stroke-width:1.8;fill:var(--c-soft)}
 .node.added rect{stroke-dasharray:none}
+.node.node.mod rect{fill:var(--warn-soft);stroke:var(--warn);stroke-width:2.2} .node.mod text{fill:var(--ink)}
+.edge.mod path{stroke:var(--warn);stroke-width:2.4;marker-end:url(#ar-r)} .edge.mod rect{stroke:var(--warn);fill:var(--warn-soft)} .edge.mod text{fill:var(--ink)}
+.node.node.modold rect{fill:var(--warn-faint);stroke:var(--warn-dim);stroke-width:1.6}
+.edge.modold path{stroke:var(--warn-dim);stroke-width:2;marker-end:url(#ar-rd)} .edge.modold rect{stroke:var(--warn-dim);fill:var(--warn-faint)}
+.node.mod.added rect{animation:pulse 1.6s ease-in-out infinite}
+.change .dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--line);flex-shrink:0}
+.change.cur .dot{background:var(--warn);border-color:var(--warn)} .change.done .dot{background:var(--warn-faint);border-color:var(--warn-dim)}
+.change.cur{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-soft)}
 .dimmed{opacity:.32}
 @keyframes pulse{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
 .node.hl.added rect{animation:pulse 1.6s ease-in-out infinite}
@@ -266,8 +275,8 @@ svg .halo{paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin
 .hcard details{font-size:11.5px;color:var(--muted)} .hcard summary{cursor:pointer} .hcard pre{margin:6px 0 0;font-family:var(--mono);font-size:11px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
 .node.ran rect{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.6} .node.ran circle{fill:var(--ok)}
 .node.cur rect{fill:var(--c-soft);stroke:var(--c);stroke-width:2.2}
-.edge.ran path{stroke:var(--ok);stroke-width:2.2} .edge.ran rect{stroke:var(--ok);fill:var(--ok-soft)}
-.edge.failed path{stroke:var(--warn);stroke-width:2.6} .edge.failed rect{stroke:var(--warn);fill:var(--warn-soft)} .edge.failed text{fill:var(--warn)}
+.edge.ran path{stroke:var(--ok);stroke-width:2.2;marker-end:url(#ar-ok)} .edge.ran rect{stroke:var(--ok);fill:var(--ok-soft)}
+.edge.failed path{stroke:var(--warn);stroke-width:2.6;marker-end:url(#ar-r)} .edge.failed rect{stroke:var(--warn);fill:var(--warn-soft)} .edge.failed text{fill:var(--warn)}
 .node.failed rect{fill:var(--warn-soft);stroke:var(--warn);stroke-width:2}
 .statusbar{display:flex;align-items:center;gap:14px;padding:8px 20px;border-top:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--muted);flex-wrap:wrap}
 .statusbar .right{margin-left:auto;font-family:var(--mono);font-size:11px}
@@ -289,23 +298,19 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
   <!-- STAGE 0 · INPUTS -->
   <section class="stage" data-stage="0">
     <div class="stagehead"><h1>Two private procedures</h1></div>
-    <div class="grid2">
+    <div class="stack">
       <div class="panel orgA">
         <div class="ph"><h2>Company A · Northwind Outdoor</h2><span class="sub">the shop</span></div>
         <pre class="src" id="srcA"></pre>
-        <div class="srchead"><span class="label">As a graph</span><span class="legend"><span><i class="sw" style="background:var(--a-soft);border-color:var(--a)"></i>the other company may see</span><span><i class="sw" style="border-style:dashed"></i>a person decides</span></span></div>
         <div class="graphwrap" id="gA"></div>
-        <details class="pf notes"><summary id="lintA-s"></summary><div id="lintA"></div></details>
       </div>
       <div class="panel orgB">
         <div class="ph"><h2>Company B · Lakeside BNPL</h2><span class="sub">the lender</span></div>
         <pre class="src" id="srcB"></pre>
-        <div class="srchead"><span class="label">As a graph</span><span class="legend"><span><i class="sw" style="background:var(--b-soft);border-color:var(--b)"></i>the other company may see</span><span><i class="sw" style="background:var(--warn-soft);border-color:var(--warn)"></i>loan declined</span></span></div>
         <div class="graphwrap" id="gB"></div>
-        <details class="pf notes"><summary id="lintB-s"></summary><div id="lintB"></div></details>
       </div>
     </div>
-    <div class="tw" style="justify-content:space-between">
+    <div class="tw" style="justify-content:flex-end">
       <button class="btn primary" data-go="1">Submit both to the mediator →</button>
     </div>
   </section>
@@ -336,7 +341,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
 
   <!-- STAGE 2 · INTERVIEW -->
   <section class="stage" data-stage="2">
-    <div class="stagehead"><h1>Five questions, fifteen minutes</h1><button class="btn sm" id="answerAll" style="margin-left:auto">Answer all</button></div>
+    <div class="stagehead"><h1>Questions sent to each company to clarify edge cases</h1><button class="btn sm" id="answerAll" style="margin-left:auto">Answer all</button></div>
     <div class="grid2" id="qpanels"></div>
     <div class="tw" style="gap:14px">
       <div class="progress" style="flex:1"><i id="qprog"></i></div>
@@ -355,12 +360,11 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
         <button data-view="A">Northwind sees</button>
         <button data-view="B">Lakeside sees</button>
       </div>
-      <span class="pill amber" id="cpill" style="margin-left:auto">awaiting 2 signatures</span>
+      <span class="legend" id="clegend" style="margin-left:auto"></span>
     </div>
     <div class="stack">
       <div class="panel">
         <div class="graphwrap" id="gContract"></div>
-        <div class="pf legend" id="clegend"></div>
       </div>
       <aside class="panel" id="crail"></aside>
     </div>
@@ -379,11 +383,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
           <span id="rsub" style="color:var(--muted);font-size:12.5px"></span>
           <div class="progress"><i id="rprog"></i></div>
           <span class="pill ok" id="rpill">ready</span>
-          <div class="tw">
-            <button class="btn icon" id="rRestart" aria-label="Restart">⏮</button>
-            <button class="btn icon primary" id="rPlay" aria-label="Play">▶</button>
-            <button class="btn icon" id="rStep" aria-label="Step forward">⏭</button>
-          </div>
+          <button class="btn icon primary" id="rPlay" aria-label="Play">▶</button>
         </div>
         <div class="graphwrap" id="gRun"></div>
         <div class="pf legend"><span><i class="sw" style="background:var(--ok-soft);border-color:var(--ok)"></i>done</span><span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>running now</span><span><i class="sw" style="background:var(--warn-soft);border-color:var(--warn)"></i>refused</span></div>
@@ -397,12 +397,16 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
     <div class="stagehead"><h1>Change one thing, rebuild only what depends on it</h1></div>
     <div class="stack">
       <div class="panel">
-        <div class="ph"><h2 id="uTitle">Joint procedure</h2><div class="right" id="uTag"></div></div>
+        <div class="phasebar">
+          <button class="btn primary" id="uStart">▶ Start</button>
+          <h2 id="uTitle" style="font-family:var(--disp);font-size:14.5px;font-weight:700;margin:0">Joint procedure, as signed</h2>
+          <div class="progress"><i id="uprog"></i></div>
+          <div class="legend"><span><i class="sw" style="background:var(--warn-soft);border-color:var(--warn)"></i>changed by this step</span><span><i class="sw" style="background:var(--warn-faint);border-color:var(--warn-dim)"></i>changed by an earlier step</span><span><i class="sw" style="opacity:.4"></i>untouched</span></div>
+        </div>
         <div class="graphwrap" id="gUpdate"></div>
-        <div class="pf legend"><span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>changed or rebuilt</span><span><i class="sw" style="background:var(--surface);border-color:var(--line)"></i>carried forward untouched</span></div>
       </div>
       <div class="panel">
-        <div class="ph"><h2>A change in one company's procedure</h2></div>
+        <div class="ph"><h2>Changes, one at a time</h2><span class="sub">each one rebuilds only what depends on it</span></div>
         <div class="updgrid">
           <div class="changes" id="changes"></div>
           <div class="impact" id="impact"></div>
@@ -487,15 +491,15 @@ const NODES = [
 // route: straight | vert | up-right | right-down | down-right | down-left | hop | loop-below | fb | cross ; os/ot = port offsets (px); lab = label side
 const EDGES = [
   {s:"A.START",t:"A.create_customer"},{s:"A.create_customer",t:"A.create_invoice"},{s:"A.create_invoice",t:"A.add_invoice_items"},{s:"A.add_invoice_items",t:"A.finalize_invoice"},
-  {s:"A.finalize_invoice",t:"A.collect_payment",when:"orig",route:"up-right",os:24},
-  {s:"A.finalize_invoice",t:"A.adapt_basket_for_lender",when:"merged"},
+  {id:"o1",s:"A.finalize_invoice",t:"A.collect_payment",when:"orig",route:"up-right",os:24},
+  {id:"m1",s:"A.finalize_invoice",t:"A.adapt_basket_for_lender",when:"merged"},
   {s:"A.collect_payment",t:"A.await_invoice_paid",route:"right-down",ot:-24,label:"card paid"},
   {s:"A.await_invoice_paid",t:"A.collect_payment",rel:"ON_FAILURE",route:"loop-below",os:-24,ot:-18,lx:-70,label:"payment failed → try again"},
   {s:"A.await_invoice_paid",t:"A.approve_large_order",route:"up-right",os:24,label:"≥ $10k"},
   {s:"A.await_invoice_paid",t:"A.fulfil_order",label:"< $10k"},
   {s:"A.approve_large_order",t:"A.fulfil_order",route:"vert",label:"approved"},
   {s:"A.fulfil_order",t:"A.END"},
-  {s:"A.mark_invoice_paid_out_of_band",t:"A.await_invoice_paid",when:"merged",label:"counts as paid",lab:"above"},
+  {id:"m2",s:"A.mark_invoice_paid_out_of_band",t:"A.await_invoice_paid",when:"merged",label:"counts as paid",lab:"above"},
   {s:"B.START",t:"B.checkLoanCanBeProvided"},
   {s:"B.checkLoanCanBeProvided",t:"B.getCustomerTermsAndConditions",label:"qualifying items",lab:"above"},
   {s:"B.checkLoanCanBeProvided",t:"B.END_not_eligible",rel:"ON_FAILURE",route:"down-right"},
@@ -566,7 +570,8 @@ const byId = Object.fromEntries(NODES.map(n=>[n.id,n]));
 function laneSpec(lanes, opts){
   const spec={}; let y=0; const gap=opts.gap??110;
   const inL=NODES.filter(n=>lanes.includes(n.lane));
-  const minCol=Math.min(...inL.map(n=>n.col)), maxCol=Math.max(...inL.map(n=>n.col));
+  let minCol=Math.min(...inL.map(n=>n.col)), maxCol=Math.max(...inL.map(n=>n.col));
+  if(opts.spanCols && (maxCol-minCol)<opts.spanCols){ const extra=opts.spanCols-(maxCol-minCol); minCol-=extra/2; maxCol+=extra/2; }
   lanes.forEach((L,i)=>{
     const padTop = L==="B" ? 52 : 30;           // B needs headroom for hops
     let h = padTop + 2*RH + (L==="A" ? 30 : 6);
@@ -599,13 +604,17 @@ function routeEdge(e,s,t,ps,pt,spec){
     case "fb": { const x=spec.cx(5.5); const up=pt.y<ps.y; const yEnd=pt.y+(up?ht:-ht);
       if(t.type==="OPAQUE"||!up) pts=[{x:ps.x+ws,y:ps.y},{x,y:ps.y},{x,y:yEnd}];
       else { const xe=pt.x+18, ym=yEnd+16; pts=[{x:ps.x+ws,y:ps.y},{x,y:ps.y},{x,y:ym},{x:xe,y:ym},{x:xe,y:yEnd}]; }
-      lab={x:x+6,y:(spec.gapTop||0)+36,anchor:"start"}; break; }
+      lab={x:x+6,y:(spec.gapTop||0)+70,anchor:"start"}; break; }
     case "cross": {
       const d=pt.y>ps.y; let xs=ps.x+os, xt=pt.x+ot;
       if(s.type==="OPAQUE") xs=xt; if(t.type==="OPAQUE") xt=xs;
       const y0=ps.y+(d?hs:-hs), y1=pt.y+(d?-ht:ht);
       if(Math.abs(xs-xt)<1){ pts=[{x:xs,y:y0},{x:xs,y:y1}]; lab={x:xs,y:(y0+y1)/2,anchor:"middle",beside:true}; }
       else { const gy=spec.gapTop+(e.gy||50); pts=[{x:xs,y:y0},{x:xs,y:gy},{x:xt,y:gy},{x:xt,y:y1}]; lab={x:(xs+xt)/2,y:gy,anchor:"middle"}; }
+      if(e.boundary){ // the label sits on the longer vertical run, so the line visibly enters and leaves the box
+        if(Math.abs(xs-xt)<1) lab={x:xs,y:(y0+y1)/2,anchor:"middle"};
+        else { const gy=pts[1].y; lab = Math.abs(gy-y0)>=Math.abs(y1-gy) ? {x:xs,y:(y0+gy)/2,anchor:"middle"} : {x:xt,y:(gy+y1)/2,anchor:"middle"}; }
+      }
       break;
     }
   }
@@ -623,8 +632,9 @@ function renderGraph(el, opts){
   let edges=allEdges.filter(e=>lanes.includes(allById[e.s].lane)&&lanes.includes(allById[e.t].lane));
   if(mode==="orig") { nodes=nodes.filter(n=>!n.merged); edges=edges.filter(e=>e.when!=="merged"&&e.when!=="cand"); }
   else if(mode==="cand") { nodes=nodes.filter(n=>!n.merged); edges=edges.filter(e=>e.when!=="merged"); }
+  else if(mode==="all") { /* every element; visibility driven by hideEdges / hideNodes */ }
   else edges=edges.filter(e=>e.when!=="orig"&&e.when!=="cand");
-  const spec=laneSpec(lanes,{gap:opts.gap,projection:proj});
+  const spec=laneSpec(lanes,{gap:opts.gap,projection:proj,spanCols:opts.spanCols});
   const local={...allById};
   if(proj){
     const other=proj==="A"?"B":"A";
@@ -640,6 +650,9 @@ function renderGraph(el, opts){
     <marker id="ar-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
     <marker id="ar-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)"/></marker>
     <marker id="ar-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker>
+    <marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker>
+    <marker id="ar-rd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn-dim)"/></marker>
+    <marker id="ar-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
   </defs>`;
   lanes.forEach(L=>{
     const sp=spec[L]; const o=ORG[L];
@@ -652,12 +665,13 @@ function renderGraph(el, opts){
     const hlE = opts.highlight && e.id && opts.highlight.edges.includes(e.id);
     const run = opts.run||null; const ranE = run && e.id && run.edges.includes(e.id); const failE = run && e.id && run.failed.includes(e.id);
     const hidden = opts.hideEdges && e.id && opts.hideEdges.includes(e.id);
-    const cls=["edge",e.rel||"LEADS_TO",e.boundary||e.pair?"boundary":"",e.pair?"pair":"",e.when||"", e.id?("e-"+e.id):"", hlE?"hl":(opts.highlight?"dimmed":""), ranE?"ran":"", failE?"failed":"", hidden?"fade":""].join(" ");
+    const modE = opts.marks && e.id && opts.marks.cur.edges.includes(e.id), oldE = opts.marks && e.id && !modE && opts.marks.old.edges.includes(e.id);
+    const cls=["edge",e.rel||"LEADS_TO",e.boundary||e.pair?"boundary":"",e.pair?"pair":"",e.when||"", e.id?("e-"+e.id):"", hlE?"hl":(opts.highlight?"dimmed":""), ranE?"ran":"", failE?"failed":"", hidden?"fade":"", modE?"mod":"", oldE?"modold":"", (opts.marks&&opts.marks.dim&&!modE&&!oldE)?"dimmed":""].join(" ");
     const marker=e.pair?"":(e.boundary?"ar-c":(e.rel==="ON_FAILURE"?"ar-w":"ar-m"));
     out+=`<g class="${cls}" data-edge="${esc(e.id||"")}"><path d="${d}" ${marker?`marker-end="url(#${marker})"`:""}/>`;
     if(e.label){
       if(e.boundary||e.pair){
-        const w=Math.max(e.label.length*5.6,(e.sub||"").length*5)+16; const bx= lab.beside ? lab.x+w/2+12 : lab.x;
+        const w=Math.max(e.label.length*5.6,(e.sub||"").length*5)+16; const bx=lab.x;
         out+=`<rect x="${bx-w/2}" y="${lab.y-15}" width="${w}" height="30" rx="3" fill="var(--surface)" stroke="var(--c)"/>
               <text x="${bx}" y="${lab.y-3}" text-anchor="middle">${esc(e.label)}</text><text class="sub" x="${bx}" y="${lab.y+9}" text-anchor="middle">${esc(e.sub||"")}</text>`;
       } else {
@@ -670,7 +684,9 @@ function renderGraph(el, opts){
     const p=pos(n,spec);
     const hlN = opts.highlight && opts.highlight.nodes.includes(n.id);
     const run = opts.run||null; const ranN = run && run.nodes.includes(n.id); const curN = run && run.cur===n.id; const failN = run && run.failedNodes.includes(n.id);
-    const cls=["node",n.type,n.lane,n.vis||"",n.merged?"merged":"", hlN?"hl":(opts.highlight?"dimmed":""), n.added?"added":"", ranN?"ran":"", curN?"cur":"", failN?"failed":""].join(" ");
+    const hiddenN = opts.hideNodes && opts.hideNodes.includes(n.id);
+    const modN = opts.marks && opts.marks.cur.nodes.includes(n.id), oldN = opts.marks && !modN && opts.marks.old.nodes.includes(n.id);
+    const cls=["node",n.type,n.lane,n.vis||"",n.merged?"merged":"", hlN?"hl":(opts.highlight?"dimmed":""), n.added?"added":"", ranN?"ran":"", curN?"cur":"", failN?"failed":"", hiddenN?"fade":"", modN?"mod":"", oldN?"modold":"", (opts.marks&&opts.marks.dim&&!modN&&!oldN)?"dimmed":""].join(" ");
     out+=`<g class="${cls}" data-node="${esc(n.id)}">`;
     if(n.type==="START"||n.type==="END"){
       out+=`<circle cx="${p.x}" cy="${p.y}" r="9"/><text x="${p.x}" y="${p.y+22}" text-anchor="middle" class="desc">${n.type}</text><title>${esc(n.id)}</title>`;
@@ -699,7 +715,7 @@ function renderGraph(el, opts){
    App state + stages
    ============================================================ */
 const STAGES=["Inputs","Merge","Interview","Contract","Run","Update"];
-const state={stage:0, phase:0, linkShown:0, findShown:0, selF:null, playing:false, timer:null, answered:new Set(), answers:{}, selQ:"q1", view:"M", signed:{A:false,B:false}, run:"run_0001", resent:false, change:"c1"};
+const state={stage:0, phase:0, linkShown:0, findShown:0, resolveShown:0, selF:null, playing:false, timer:null, answered:new Set(), answers:{}, selQ:"q1", view:"M", signed:{A:false,B:false}, run:"run_0001", resent:false};
 const $=s=>document.querySelector(s);
 
 function renderSteps(){
@@ -710,6 +726,7 @@ function go(i){
   document.querySelectorAll(".stage").forEach(s=>s.classList.toggle("on",+s.dataset.stage===state.stage));
   if(state.stage===1) restart(); else pause();
   if(state.stage!==4) rPause();
+  if(state.stage!==5) uPause();
   if(state.stage===3) renderContract();
   if(state.stage===4) renderRun();
   if(state.stage===5) renderUpdate();
@@ -725,56 +742,94 @@ document.addEventListener("keydown",e=>{
 /* ---- Stage 0 ---- */
 function renderInputs(){
   $("#srcA").textContent=SRC_A; $("#srcB").textContent=SRC_B;
-  renderGraph($("#gA"),{lanes:["A"],mode:"orig",aria:"Northwind's compiled graph: a linear invoicing chain with a payment retry loop and a manager gate for orders of ten thousand dollars or more."});
-  renderGraph($("#gB"),{lanes:["B"],mode:"orig",aria:"Lakeside's compiled loan workflow with two skip paths and a not-eligible decline exit."});
+  renderGraph($("#gA"),{lanes:["A"],mode:"orig",spanCols:9.9,aria:"Northwind's compiled graph: a linear invoicing chain with a payment retry loop and a manager gate for orders of ten thousand dollars or more."});
+  renderGraph($("#gB"),{lanes:["B"],mode:"orig",spanCols:9.9,aria:"Lakeside's compiled loan workflow with two skip paths and a not-eligible decline exit."});
   
-  for(const L of ["A","B"]){ const w=LINT[L].some(l=>l.sev==="warn"); $("#lint"+L+"-s").innerHTML=`<span class="pill ${w?"warn":"line"}">${LINT[L].length} ${w?(LINT[L].length>1?"things to fix":"thing to fix"):(LINT[L].length>1?"notes":"note")}</span> found while reading the procedure`; $("#lint"+L).innerHTML=LINT[L].map(l=>`<div>${esc(l.text)}</div>`).join(""); }
 }
 
 /* ---- Stage 1: merge player ----
-   phase 0: both procedures submitted · 1: join — proposed matches appear one by one · 2: check — findings stream in · 3: done.
-   Plays automatically on entering the stage. */
-const PHASES=["Submitted","1 Join","2 Check"];
-const CAND=["c1","p1","c3","c2","c4"];
+   phase 0 submitted · 1 join (proposed matches appear) · 2 check (findings stream in) · 3 resolve (automatic fixes and the
+   suggested answers are applied, turning the candidate into the joint procedure) · 4 done. Plays on entering the stage. */
+const PHASES=["Submitted","1 Join","2 Check","3 Resolve"];
+const CAND=["c1","p1","c3","c2","c4"], MERGED_E=["m1","h1","m2","h2","h3","fb"], MERGED_N=["A.adapt_basket_for_lender","A.mark_invoice_paid_out_of_band"], ORIG_E=["o1"];
+const RESOLVE=[
+  {show:{nodes:["A.adapt_basket_for_lender"],edges:["m1","h1"]},hide:["c1","o1"],
+   narr:"<b>Converter step.</b> The unit mismatch is fixed at ladder rung 2: a converter step is inserted on Northwind's side and the basket goes to the lender through it. q2's suggested answer says Northwind converts."},
+  {show:{nodes:[],edges:[]},hide:["p1"],hl:{nodes:["A.create_customer","B.createCustomer"],edges:["h1"]},
+   narr:"<b>Same name, different meaning.</b> q1's suggested answer keeps both steps, and only the customer's name and email may cross on h1."},
+  {show:{nodes:["A.mark_invoice_paid_out_of_band"],edges:["m2","h2"]},hide:["c2"],
+   narr:"<b>Deadlock broken.</b> q3's suggested answer: an authorized plan counts as paid. A “mark invoice paid” step is inserted and the plan comes back into it on h2."},
+  {show:{nodes:[],edges:["h3"]},hide:["c3"],hl:{nodes:["A.approve_large_order","A.fulfil_order","B.updateOrderStatus"],edges:["h3"]},
+   narr:"<b>Loan id and the $10,000 rule.</b> q4's suggested answer adds the loan id to the plan, so shipping can report it on h3. The approval rule combines automatically and becomes the condition Lakeside enforces."},
+  {show:{nodes:[],edges:["fb"]},hide:["c4"],
+   narr:"<b>Fallback.</b> q5's suggested answer: if the lender declines, take card payment. The fallback edge replaces the proposal."}
+];
+function visibility(){
+  let hideE=[], hideN=[];
+  if(state.phase===0){ hideE=[...CAND,...MERGED_E]; hideN=[...MERGED_N]; }
+  else if(state.phase===1){ hideE=[...CAND.slice(state.linkShown),...MERGED_E]; hideN=[...MERGED_N]; }
+  else if(state.phase===2){ hideE=[...MERGED_E]; hideN=[...MERGED_N]; }
+  else if(state.phase===3){
+    const done=RESOLVE.slice(0,state.resolveShown);
+    const shownE=done.flatMap(r=>r.show.edges), shownN=done.flatMap(r=>r.show.nodes), hidden=done.flatMap(r=>r.hide);
+    hideE=[...MERGED_E.filter(id=>!shownE.includes(id)),...hidden]; hideN=MERGED_N.filter(id=>!shownN.includes(id));
+  } else { hideE=[...CAND,...ORIG_E]; hideN=[]; }
+  return {hideE,hideN};
+}
 function applyPhase(){
-  const selF = (state.phase>=2 && state.selF!=null && state.selF<state.findShown) ? FINDINGS[state.selF] : null;
-  const hide = state.phase===0 ? CAND : (state.phase===1 ? CAND.slice(state.linkShown) : []);
-  renderGraph($("#gMerge"),{lanes:["A","B"],mode:"cand",gap:112,hideEdges:hide,highlight:selF?selF.hl:null,aria:"Both procedures in two lanes; proposed matches appear between them one by one, then each finding highlights the steps it concerns."});
-  $("#phases").innerHTML=PHASES.map((p,i)=>`<span class="ph-item ${i<state.phase?"done":""} ${i===state.phase?"cur":""}">${p}${i===1&&state.phase===1?` · ${state.linkShown}/${CAND.length}`:""}${i===2&&state.phase===2?` · ${state.findShown}/${FINDINGS.length}`:""}</span>`).join(`<span style="color:var(--muted)">→</span>`);
-  const pct = state.phase===0 ? 0 : state.phase===1 ? 8+42*state.linkShown/CAND.length : state.phase===2 ? 50+50*state.findShown/FINDINGS.length : 100;
+  const selF = (state.phase===2 && state.selF!=null && state.selF<state.findShown) ? FINDINGS[state.selF] : null;
+  let hl = selF ? selF.hl : null;
+  if(state.phase===3 && state.resolveShown>0){ const r=RESOLVE[state.resolveShown-1]; hl = r.hl || {nodes:r.show.nodes,edges:r.show.edges}; }
+  const {hideE,hideN}=visibility();
+  renderGraph($("#gMerge"),{lanes:["A","B"],mode:"all",gap:112,hideEdges:hideE,hideNodes:hideN,highlight:hl,aria:"Both procedures in two lanes; proposed matches appear, findings highlight what they concern, then fixes and suggested answers turn the candidate into the joint procedure."});
+  $("#phases").innerHTML=PHASES.map((p,i)=>`<span class="ph-item ${i<state.phase?"done":""} ${i===state.phase?"cur":""}">${p}${i===1&&state.phase===1?` · ${state.linkShown}/${CAND.length}`:""}${i===2&&state.phase===2?` · ${state.findShown}/${FINDINGS.length}`:""}${i===3&&state.phase===3?` · ${state.resolveShown}/${RESOLVE.length}`:""}</span>`).join(`<span style="color:var(--muted)">→</span>`);
+  const pct = state.phase===0 ? 0 : state.phase===1 ? 5+25*state.linkShown/CAND.length : state.phase===2 ? 30+35*state.findShown/FINDINGS.length : state.phase===3 ? 65+35*state.resolveShown/RESOLVE.length : 100;
   $("#prog").style.width=pct+"%";
   let n="";
   if(state.phase===1 && state.linkShown>0) n=EDGES.find(e=>e.id===CAND[state.linkShown-1]).narr;
   if(state.phase===2 && state.findShown>0) n=FINDINGS[state.findShown-1].narr;
+  if(state.phase===3 && state.resolveShown>0) n=RESOLVE[state.resolveShown-1].narr;
   const nAuto=FINDINGS.filter(f=>f.route==="auto").length, nAsk=FINDINGS.length-nAuto;
-  if(state.phase===3) n=`<b>Checked.</b> ${nAuto} finding${nAuto===1?"":"s"} resolved by rule; ${nAsk} need a person. Their answers will add the converter steps and the fallback you'll see in the contract.`;
+  if(state.phase===4) n=`<b>Merged.</b> The joint procedure with ${nAuto} finding${nAuto===1?"":"s"} resolved by rule and the suggested answers to the ${QUESTIONS.length} questions (${nAsk} findings) applied. The interview confirms or changes those answers; the contract is issued on the confirmed set.`;
   $("#narr").innerHTML=n; $("#narr").hidden=!n;
   const fl=$("#findings");
   $("#fpanel").hidden = !(state.phase>=2 && state.findShown>0);
-  fl.innerHTML=FINDINGS.slice(0,state.findShown).map((f,i)=>`<div class="finding ${f.pass?"pass":""} ${state.selF===i?"sel":""}" data-i="${i}" role="button" tabindex="0">
-    <div class="row"><span class="code">${f.id}</span><span class="pill ${f.route==="auto"?"ok":"c"}">${f.route==="auto"?"fixed automatically":`ask ${ORG[QUESTIONS.find(q=>q.id===f.q).to].short}`}</span></div>
-    <div class="txt">${esc(f.text)}</div></div>`).join("");
-  fl.querySelectorAll(".finding").forEach(el=>{ const pick=()=>{ const i=+el.dataset.i; if(i>=state.findShown) return; pause(); state.selF = state.selF===i ? null : i; applyPhase(); }; el.onclick=pick; el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();} }; });
+  if(fl.children.length>state.findShown) fl.innerHTML="";            // replay: start the list over
+  for(let i=fl.children.length;i<state.findShown;i++){                 // only the new finding is added (and fades in)
+    const f=FINDINGS[i];
+    fl.insertAdjacentHTML("beforeend",`<div class="finding ${f.pass?"pass":""}" data-i="${i}" role="button" tabindex="0">
+      <div class="row"><span class="code">${f.id}</span><span class="pill ${f.route==="auto"?"ok":"c"}">${f.route==="auto"?"fixed automatically":`ask ${ORG[QUESTIONS.find(q=>q.id===f.q).to].short}`}</span></div>
+      <div class="txt">${esc(f.text)}</div></div>`);
+    const el=fl.lastElementChild;
+    const pick=()=>{ if(state.phase!==2) return; pause(); state.selF = state.selF===i ? null : i; applyPhase(); };
+    el.onclick=pick; el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();} };
+  }
+  [...fl.children].forEach((el,i)=>el.classList.toggle("sel", state.phase===2 && state.selF===i));
   $("#fcount").textContent=`${state.findShown} of ${FINDINGS.length}`;
   const auto=FINDINGS.slice(0,state.findShown).filter(f=>f.route==="auto").length, ask=state.findShown-auto;
   $("#fsum").textContent= state.findShown<FINDINGS.length ? `Checking… ${auto} fixed · ${ask} to ask` : `${auto} resolved by rule · ${ask} to ask`;
-  $("#toInterview").disabled = !(state.phase>=3);
+  $("#toInterview").disabled = !(state.phase>=4);
 }
 function step(){
   if(state.phase===0) state.phase=1;
   else if(state.phase===1){ state.linkShown++; if(state.linkShown>=CAND.length) state.phase=2; }
-  else if(state.phase===2){ state.findShown++; state.selF=state.findShown-1; if(state.findShown>=FINDINGS.length) state.phase=3; }
+  else if(state.phase===2){ state.findShown++; state.selF=state.findShown-1; if(state.findShown>=FINDINGS.length){ state.phase=3; state.selF=null; } }
+  else if(state.phase===3){ state.resolveShown++; if(state.resolveShown>=RESOLVE.length) state.phase=4; }
   applyPhase();
-  if(state.phase>=3) pause();
+  if(state.phase>=4) pause();
 }
 function play(){
   pause(); state.playing=true;
-  const tick=()=>{ step(); if(state.phase>=3){ pause(); return; } const d = state.phase===1 ? 900 : (state.phase===2 ? 1500 : 1200); state.timer=setTimeout(tick,d); };
-  state.timer=setTimeout(tick,1200);
+  const tick=()=>{ step(); if(state.phase>=4){ pause(); return; } const d = state.phase===1 ? 650 : (state.phase===2 ? 1100 : state.phase===3 ? 1400 : 800); state.timer=setTimeout(tick,d); };
+  state.timer=setTimeout(tick,800);
 }
 function pause(){ state.playing=false; clearTimeout(state.timer); state.timer=null; }
-function restart(){ pause(); state.phase=0; state.linkShown=0; state.findShown=0; state.selF=null; applyPhase(); play(); }
-$("#mStep").onclick=()=>{ pause(); if(state.phase<3){ if(state.phase<2){ state.phase=2; state.linkShown=CAND.length; } else { state.findShown=FINDINGS.length; state.selF=null; state.phase=3; } applyPhase(); } };
+function restart(){ pause(); state.phase=0; state.linkShown=0; state.findShown=0; state.resolveShown=0; state.selF=null; applyPhase(); play(); }
+$("#mStep").onclick=()=>{ pause();
+  if(state.phase<2){ state.phase=2; state.linkShown=CAND.length; }
+  else if(state.phase===2){ state.findShown=FINDINGS.length; state.selF=null; state.phase=3; }
+  else if(state.phase===3){ state.resolveShown=RESOLVE.length; state.phase=4; }
+  applyPhase(); if(state.phase<4) play(); };
 $("#mRestart").onclick=restart;
 
 /* ---- Stage 2: interview ---- */
@@ -820,7 +875,7 @@ function renderInterview(){
     const next=QUESTIONS.find(x=>!state.answered.has(x.id)); state.selQ = next?next.id:null; renderInterview();
   });
   $("#qprog").style.width=(n/5*100)+"%";
-  $("#qstat").textContent = n===5 ? "All five answered · 15 minutes" : `${n} of 5 answered`;
+  $("#qstat").textContent = n===5 ? "All five answered" : `${n} of 5 answered`;
   $("#toContract").textContent = n===5 ? "Build contract →" : `Build contract (${n} of 5) →`;
 }
 $("#answerAll").onclick=()=>{QUESTIONS.forEach(q=>{state.answered.add(q.id); state.answers[q.id]=state.answers[q.id]||q.options[0];}); state.selQ=null; renderInterview();};
@@ -829,7 +884,6 @@ $("#answerAll").onclick=()=>{QUESTIONS.forEach(q=>{state.answered.add(q.id); sta
 function renderContract(){
   const v=state.view; const both=state.signed.A&&state.signed.B; const n=(state.signed.A?1:0)+(state.signed.B?1:0);
   $("#viewSeg").querySelectorAll("button").forEach(b=>{b.className=(b.dataset.view===v?"on ":"")+(b.dataset.view==="M"?"c":b.dataset.view.toLowerCase());});
-  $("#cpill").className="pill "+(both?"ok":"amber"); $("#cpill").textContent= both?"contract active":`awaiting ${2-n} signature${n===1?"":"s"}`;
   const aria={M:"Merged swimlane graph, mediator view: both lanes, two adapters, three handoff edges and the decline fallback.",A:"Northwind's projection: its own lane in full, Lakeside collapsed to one opaque box listing only the handoff fields, end states and the h3 guard.",B:"Lakeside's projection: its own lane in full, Northwind collapsed to one opaque box."};
   renderGraph($("#gContract"),{lanes:["A","B"],mode:"merged",projection:v==="M"?null:v,gap:112,aria:aria[v]});
   $("#clegend").innerHTML=`<span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>new step, created by an answer</span><span><i class="ln" style="border-color:var(--c)"></i>handoff between companies</span><span><i class="ln" style="border-style:dashed;border-color:var(--warn)"></i>if something fails</span>`;
@@ -838,7 +892,7 @@ function renderContract(){
   if(v==="M"){
     rail.className="panel";
     rail.innerHTML=`<div class="ph"><h2>Certificate</h2><span class="sub">every check passed; each company can re-run its own</span><div class="right"><span class="pill ok">${CERTINFO.n} checks · ${CERTINFO.pass} pass${CERTINFO.guarded?` · ${CERTINFO.guarded} guarded`:""}</span></div></div>
-      ${CERTINFO.hashes?`<div class="hashbox">${esc(CERTINFO.id)} · ${esc(CERTINFO.contract)}<br>${Object.entries(CERTINFO.hashes).map(([k,v])=>`${esc(k)} ${esc(String(v).slice(0,23))}…`).join("<br>")}</div>`:""}
+      ${CERTINFO.hashes?`<div class="hashbox" style="margin-top:10px">${esc(CERTINFO.id)} · ${esc(CERTINFO.contract)}<br>${Object.entries(CERTINFO.hashes).map(([k,v])=>`${esc(k)} ${esc(String(v).slice(0,23))}…`).join("<br>")}</div>`:""}
       <div class="sigs wide"><div class="label">Signatures</div>
         <div class="sig"><span class="box med"></span>Mediator · signed</div>
         <div class="sig"><span class="box ${state.signed.A?"on":""}"></span>Northwind ${state.signed.A?"· signed":""} <button class="btn sm" data-view-go="A">${state.signed.A?"view":"review & sign →"}</button></div>
@@ -928,12 +982,10 @@ function renderRun(){
   const rs=$("#resend"); if(rs) rs.onclick=()=>{ state.resent=true; rPlay(); };
 }
 function rStep(){ const r=RUNS[state.run]; const lim=traceLimit(r); if(rstate.pos<lim){ rstate.pos++; renderRun(); } if(rstate.pos>=lim) rPause(); }
-function rPlay(){ const r=RUNS[state.run]; if(rstate.pos>=r.trace.length){ rstate.pos=0; state.resent=false; } rstate.playing=true; renderRun(); rstate.timer=setInterval(rStep,420); }
+function rPlay(){ const r=RUNS[state.run]; if(rstate.pos>=r.trace.length){ rstate.pos=0; state.resent=false; } rstate.playing=true; renderRun(); rstate.timer=setInterval(rStep,260); }
 function rPause(){ rstate.playing=false; clearInterval(rstate.timer); rstate.timer=null; if(state.stage===4) $("#rPlay").textContent="▶"; }
 function rRestart(){ rPause(); rstate.pos=0; state.resent=false; renderRun(); }
 $("#rPlay").onclick=()=> rstate.playing?rPause():rPlay();
-$("#rStep").onclick=()=>{ rPause(); rStep(); };
-$("#rRestart").onclick=rRestart;
 $("#runSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ rPause(); state.run=b.dataset.run; rstate.pos=0; state.resent=false; renderRun(); });
 
 /* ---- Stage 5: update ---- */
@@ -956,15 +1008,6 @@ const CHANGES=[
    rechecked:["h4 data shapes","h4 fields allowed","h4 gets what it needs","h4 test payloads","every step still ends"],checksTotal:29,
    keeps:"h1, h2, h3, all five answers, all 24 existing checks",
    people:"Two new questions: Northwind, what may be sent on h4; Lakeside, whether a partial shipment activates the loan. Both sign. This is the most a change can cost: about one handoff's worth of the original merge."},
-  {id:"c6",org:"B",title:"Stop returning the plan total to the shop",kind:"a field is removed · at the handoff",
-   highlight:{nodes:["B.retrieveFinalizedPaymentPlan","A.mark_invoice_paid_out_of_band"],edges:["h2"]},
-   relabelEdges:{h2:{sub:"returns: status, loan id — total removed"}},
-   relabel:{"A.mark_invoice_paid_out_of_band":{sub:"condition reads a field that is gone"}},
-   before:"Lakeside returns plan status, loan id and total",after:"Lakeside returns plan status and loan id only",
-   touches:[{what:"h2 · what Lakeside returns",verb:"one field gone"},{what:"mark invoice paid step",verb:"its condition can no longer be tested"},{what:"answer q3",verb:"built on the missing field"}],
-   rechecked:["h2 data shapes → fails","h2 gets what it needs → fails","h2 test payloads"],checksTotal:24,
-   keeps:"h1, h3, the other four answers",
-   people:"Both companies are asked, as a conflict rather than a follow-up: Lakeside's removal contradicts Northwind's earlier answer. The contract is blocked until they resolve it; nothing is quietly dropped."},
   {id:"c5",org:"B",title:"Eligibility check now leaves a credit inquiry",kind:"a step does more than before · at the handoff",
    highlight:{nodes:["B.checkLoanCanBeProvided"],edges:["h1"]},
    before:"The eligibility check only looks",after:"The eligibility check also records a credit inquiry against the customer",
@@ -973,24 +1016,35 @@ const CHANGES=[
    keeps:"h2, h3, the other four answers, the other 22 checks",
    people:"Northwind is asked q1 again, with its old answer offered as the default, because that answer assumed the step only checked. Both sign."}
 ];
+const ustate={pos:0,playing:false,timer:null};   // pos = how many changes have been applied
 function renderUpdate(){
-  const c=CHANGES.find(x=>x.id===state.change);
-  $("#changes").innerHTML=CHANGES.map(x=>`<button class="change ${x.id===state.change?"on":""}" data-change="${x.id}"><span>${esc(x.title)}</span><span class="pill ${x.org.toLowerCase()}">${ORG[x.org].short}</span></button>`).join("");
-  $("#changes").querySelectorAll(".change").forEach(b=>b.onclick=()=>{state.change=b.dataset.change; renderUpdate();});
-  $("#uTitle").textContent=c.title; $("#uTag").innerHTML=`<span class="pill line">${esc(c.kind)}</span>`;
-  // relabel boundary edge subs through a shallow copy of EDGES
-  const extraEdges=(c.extraEdges||[]);
-  const relabelEdges=c.relabelEdges||{};
-  const savedSubs={}; Object.keys(relabelEdges).forEach(id=>{const e=EDGES.find(x=>x.id===id); savedSubs[id]=e.sub; e.sub=relabelEdges[id].sub;});
-  renderGraph($("#gUpdate"),{lanes:["A","B"],mode:"merged",gap:112,extraNodes:c.extraNodes||[],extraEdges,relabel:c.relabel||{},highlight:c.highlight,aria:"The joint procedure with the parts affected by the selected change highlighted; everything else dimmed."});
-  Object.keys(savedSubs).forEach(id=>{EDGES.find(x=>x.id===id).sub=savedSubs[id];});
-  $("#impact").innerHTML=`
+  const n=ustate.pos, cur=n>0?CHANGES[n-1]:null, applied=CHANGES.slice(0,n);
+  // cumulative graph: every applied change's additions and relabels, later ones winning
+  const extraNodes=applied.flatMap(c=>c.extraNodes||[]), extraEdges=applied.flatMap(c=>c.extraEdges||[]);
+  const relabel=Object.assign({},...applied.map(c=>c.relabel||{}));
+  const savedSubs={}; applied.forEach(c=>Object.entries(c.relabelEdges||{}).forEach(([id,v])=>{ const e=EDGES.find(x=>x.id===id); if(!(id in savedSubs)) savedSubs[id]=e.sub; e.sub=v.sub; }));
+  const marks={dim:n>0, cur:cur?cur.highlight:{nodes:[],edges:[]}, old:{nodes:applied.slice(0,-1).flatMap(c=>c.highlight.nodes), edges:applied.slice(0,-1).flatMap(c=>c.highlight.edges)}};
+  renderGraph($("#gUpdate"),{lanes:["A","B"],mode:"merged",gap:112,extraNodes,extraEdges,relabel,marks,aria:"The joint procedure; the parts changed by the current step in red, parts changed by earlier steps in light red, everything else as before."});
+  Object.entries(savedSubs).forEach(([id,sub])=>{EDGES.find(x=>x.id===id).sub=sub;});
+  $("#uTitle").textContent = cur ? cur.title : "Joint procedure, as signed";
+  $("#uprog").style.width=(n/CHANGES.length*100)+"%";
+  $("#uStart").textContent = ustate.playing ? "❚❚ Pause" : (n>=CHANGES.length ? "↺ Start over" : (n===0 ? "▶ Start" : "▶ Continue"));
+  $("#changes").innerHTML=CHANGES.map((x,i)=>`<button class="change ${i===n-1?"cur":(i<n-1?"done":"")}" data-change="${i}"><span class="dot"></span><span>${esc(x.title)}</span><span class="pill ${x.org.toLowerCase()}">${ORG[x.org].short}</span></button>`).join("");
+  $("#changes").querySelectorAll(".change").forEach(b=>b.onclick=()=>{ uPause(); ustate.pos=+b.dataset.change+1; renderUpdate(); });
+  const imp=$("#impact");
+  if(!cur){ imp.innerHTML=`<div style="font-size:12.5px;color:var(--muted)">Press Start to apply the changes one at a time and see what each one rebuilds.</div>`; return; }
+  const c=cur;
+  imp.innerHTML=`
     <div class="k"><div class="label">What changed</div><div class="ba"><span class="was">${esc(c.before)}</span><span class="arr">→</span><span class="now">${esc(c.after)}</span></div></div>
-    <div class="k"><div class="label">What it touches in the joint procedure</div><div class="chips">${c.touches.map(t=>`<span class="chip"><b>${esc(t.what)}</b> · ${esc(t.verb)}</span>`).join("")}</div></div>
+    <div class="k"><div class="label">What it touches in the joint procedure</div><div class="chips">${c.touches.map(t=>`<span class="chip red"><b>${esc(t.what)}</b> · ${esc(t.verb)}</span>`).join("")}</div></div>
     <div class="k"><div class="label">Re-checked</div><div class="chips">${c.rechecked.map(t=>`<span class="chip ${t.includes("fails")?"bad":"ok"}">${esc(t)}</span>`).join("")}<span class="chip deny">${c.checksTotal-c.rechecked.length} others carried forward</span></div></div>
     <div class="k"><div class="label">Untouched</div><div style="font-size:12.5px">${esc(c.keeps)}</div></div>
     <div class="k"><div class="label">Who has to do anything</div><div style="font-size:12.5px;line-height:1.5">${esc(c.people)}</div></div>`;
 }
+function uStep(){ if(ustate.pos<CHANGES.length){ ustate.pos++; renderUpdate(); } if(ustate.pos>=CHANGES.length) uPause(); }
+function uPlay(){ if(ustate.pos>=CHANGES.length) ustate.pos=0; ustate.playing=true; uStep(); if(ustate.pos<CHANGES.length) ustate.timer=setInterval(()=>{ uStep(); },2400); else uPause(); renderUpdate(); }
+function uPause(){ ustate.playing=false; clearInterval(ustate.timer); ustate.timer=null; if(state.stage===5) $("#uStart").textContent = ustate.pos>=CHANGES.length ? "↺ Start over" : (ustate.pos===0 ? "▶ Start" : "▶ Continue"); }
+$("#uStart").onclick=()=> ustate.playing ? uPause() : uPlay();
 
 /* ---- real data overlay (ui/demo.js, written by python -m pmp.snapshot) ----
    Rewrites the curated constants above in place; the layout hints, routing and interactions stay as they are. */
@@ -1000,27 +1054,22 @@ function renderUpdate(){
   const NID={"A.add_items":"A.add_invoice_items","A.T_fulfilled":"A.END"}; const nid=id=>NID[id]||id;
   const leaf=p=>p.split(".").pop();
   document.querySelector(".brand").insertAdjacentHTML("beforeend",`<small>precomputed ${esc(D.generated_at.replace("T"," ").slice(0,16))} · alignments: ${esc(D.models.alignments_source)} · ${esc(D.models.llm)}</small>`);
-  // inputs
   SRC_A=D.input.orgs.A.excerpt; SRC_B=D.input.orgs.B.excerpt;
   LINT.A=D.input.orgs.A.lint.map(f=>({code:f.check,sev:"info",text:`${f.check} · ${f.detail}`}));
   LINT.B=D.input.orgs.B.lint.map(f=>({code:f.check,sev:"warn",text:`${f.check} · ${f.detail}`}));
-  // alignment proposals onto the candidate links
   const AL=Object.fromEntries(D.merge.alignments.map(a=>[a.a_name+"~"+a.b_name,a]));
   const CANDMAP={c1:"finalize_invoice~checkLoanCanBeProvided",p1:"create_customer~createCustomer",c3:"fulfil_order~updateOrderStatus",c2:"await_invoice_paid~retrieveFinalizedPaymentPlan",c4:"collect_payment~END_not_eligible"};
   for(const [eid,key] of Object.entries(CANDMAP)){ const e=EDGES.find(x=>x.id===eid), a=AL[key]; if(!e||!a) continue;
     e.sub = eid==="p1" ? `σ ${a.sigma.toFixed(2)} similar · ${a.proposal} · left for a person` : `${a.proposal.replace("_"," ")} · σ ${a.sigma.toFixed(2)} · confidence ${a.confidence.toFixed(2)}`;
     e.narr = e.narr.replace(/\(0\.\d+\)/, `(${(eid==="p1"?a.sigma:a.confidence).toFixed(2)})`) + ` <span style="display:block;margin-top:4px;font-family:var(--mono);font-size:10.5px">model rationale: ${esc(a.rationale)}</span>`; }
-  // findings: real detail, rung and who resolved them
   const FD=Object.fromEntries(D.merge.findings.map(f=>[f.check,f]));
   FINDINGS.forEach(f=>{ const r=FD[f.id]; if(!r) return; f.text=r.detail; f.rung=r.rung; f.stakes=r.stakes;
     if(r.resolved_by&&r.resolved_by.startsWith("q")){ f.route="ask"; f.q=r.resolved_by; } else { f.route="auto"; }
     if(f.id==="IO-01") f.narr="<b>Units don't match.</b> Derivable from the two submissions alone, but Northwind's own preferences say always ask about money → q2, with the conversion as the default."; });
-  // questions: real text, routing, answers and guardrails (the answer choices stay as the page's own wording)
   const QD=Object.fromEntries(D.interview.questions.map(q=>[q._id,q]));
   QUESTIONS.forEach(q=>{ const r=QD[q.id]; if(!r) return; q.text=r.text; q.to=r.to_org; q.who=r.to_role; q.trigger=r.triggers.join(" + "); q.def=r.default; q.answer=r.answer;
     q.by=`${r.answered_by.user} · ${r.ts.slice(11,16)}`; q.defaultAccepted=!!r.accepted_default;
     q.guardrails=r.guardrails.map(g=>({t:g.type.replace("_"," "),v:[g.edge,g.decision,g.node&&g.node._id,g.fields&&g.fields.join(", "),g.on].filter(Boolean).join(" · ")})); });
-  // contract: certificate families, hashes, opaque boxes, boundary labels
   const C=D.contract, cert=C.certificate;
   const FAM=[["STR","Every step leads to an end"],["IO","Data shapes fit across handoffs"],["PRE","Each step gets what it needs"],["POL","Company rules combined"],["TOOL","Tools stay with their owner"],["FAIL","Duplicates, failures, test payloads"],["ALN","Nothing private leaked"],["INV","Each company's own four invariants"]];
   const famOf=c=>{const k=c.check.split("-")[0]; return k==="DUP"||k==="CONF"?"FAIL":k==="PRIV"?"ALN":k;};
@@ -1040,7 +1089,6 @@ function renderUpdate(){
   const nf=id=>(BE[id]?BE[id].allowlist.length:0);
   const shortGuard=g=>g.replace("plan authorized and total matches the invoice","plan authorized, total matches").replace("manager-approved","approved").replace(/\$(\d+),000/,"$$$1k");
   eh("h1").sub=`sends: name, email, basket · ${nf("h1")} fields`; eh("h2").sub=`returns: plan status, loan id, total · if ${shortGuard(guard("h2"))}`; eh("h3").sub=`sends: shipped, loan id · if ${shortGuard(guard("h3"))}`;
-  // runs: traces and cards from the recorded events and handoffs
   function traceFrom(run){ const t=[]; const started=new Set(); let prev=null;
     for(const e of run.events){
       if(e.event==="retry"){ t.push({patch:true}); continue; }
@@ -1065,7 +1113,6 @@ function renderUpdate(){
   RUNS.run_0002={sub:`${R2.republish.org==="B"?"Lakeside":"Northwind"} republished: ${R2.republish.require_on_h1.join(", ")} now required on h1`,trace:traceFrom(R2),cards:cards2,resendLabel:`Let the mediator repair it → contract v${R2.contract_v2?R2.contract_v2.version:2} → retry`};
   const b2=document.getElementById("runBtn2"); if(b2) b2.textContent="Lakeside changes its mind";
   document.querySelector('[data-run="run_0001"]').textContent=`A ${money(2780)} order`;
-  // update: the computed change replaces the first card; the others stay as projections
   const U=D.update; const c1=CHANGES.find(x=>x.id==="c1");
   c1.title=`Raise the approval threshold from ${money(U.change.old)} to ${money(U.change.new)}`; c1.kind=`${U.change.direction} · class ${U.class} · computed`;
   c1.relabel={"A.approve_large_order":{label:`approve ≥ $${U.change.new/1000}k`}}; c1.relabelEdges={h3:{sub:`sends: shipped, loan id · if ${shortGuard(human(U.contract_v3.h3.guard))}`}};
@@ -1073,21 +1120,22 @@ function renderUpdate(){
   c1.touches=U.rebuilt.map(r=>({what:r.derived_id,verb:`rebuilt · ${r.rebuild_fn}`}));
   c1.rechecked=U.checks_rerun; c1.checksTotal=U.checks_rerun.length+U.checks_carried;
   c1.keeps=`${U.carried_guardrails.length} guardrails, answers ${U.questions_carried.join(", ")}, and ${U.checks_carried} checks carried from ${U.certificate.supersedes}`;
-  c1.people=`${U.friction}. Nobody is asked: no earlier answer was built from the threshold. Signatures required: ${U.signatures_required.map(o=>ORG[o].short).join(" and ")}. Contract v${U.contract_v3.version} supersedes v${U.contract_v3.supersedes}. Run 0001 again under v${U.rerun_under_v3.contract_version}: ${U.rerun_under_v3.A.status}.`;
-  CHANGES.filter(x=>x.id!=="c1").forEach(x=>{ x.kind+=" · projected"; });
+  c1.people=`${U.friction}. Nobody is asked: no earlier answer was built from the threshold. Signatures required: ${U.signatures_required.map(o=>ORG[o].short).join(" and ")}. Contract v${U.contract_v3.version} supersedes v${U.contract_v3.supersedes}. Run 0001 again under v${U.rerun_under_v3.contract_version}: ${U.rerun_under_v3.A.status}. (computed)`;
+  CHANGES.filter(x=>x.id!=="c1").forEach(x=>{ x.people+=" (projected from the same rules, not computed)"; });
 })();
 
 /* ---- reset + boot ---- */
-$("#btnReset").onclick=()=>{ pause(); rPause(); rstate.pos=0; Object.assign(state,{phase:0,linkShown:0,findShown:0,selF:null,answered:new Set(),answers:{},selQ:"q1",view:"M",signed:{A:false,B:false},run:"run_0001",resent:false,change:"c1"}); applyPhase(); renderInterview(); renderContract(); renderRun(); go(0); };
+$("#btnReset").onclick=()=>{ pause(); rPause(); rstate.pos=0; uPause(); ustate.pos=0; Object.assign(state,{phase:0,linkShown:0,findShown:0,resolveShown:0,selF:null,answered:new Set(),answers:{},selQ:"q1",view:"M",signed:{A:false,B:false},run:"run_0001",resent:false}); applyPhase(); renderInterview(); renderContract(); renderRun(); go(0); };
 renderInputs(); renderInterview(); renderContract(); renderRun(); renderUpdate(); go(0);
-// deep links for demos and screenshots: ?stage=3&view=A · ?stage=4&run=run_0002&pos=99&resent=1 · ?stage=1&skip=1
+// deep links for demos and screenshots: ?stage=3&view=A · ?stage=4&run=run_0002&pos=99&resent=1 · ?stage=1&skip=1 · ?stage=5&change=1
 (function(){ const q=new URLSearchParams(location.search); if(!q.has("stage")) return;
-  if(q.get("view")) state.view=q.get("view"); if(q.get("run")) state.run=q.get("run"); if(q.get("resent")) state.resent=true; if(q.get("change")) state.change=q.get("change");
+  if(q.get("view")) state.view=q.get("view"); if(q.get("run")) state.run=q.get("run"); if(q.get("resent")) state.resent=true;
   if(q.get("answered")) QUESTIONS.forEach(x=>{state.answered.add(x.id); state.answers[x.id]=x.options[0];});
   if(q.get("signed")) state.signed={A:true,B:true};
   go(+q.get("stage"));
-  if(q.get("skip")&&state.stage===1){ pause(); state.phase=3; state.linkShown=CAND.length; state.findShown=FINDINGS.length; state.selF=null; applyPhase(); }
-  if(q.get("pos")&&state.stage===4){ rPause(); rstate.pos=Math.min(+q.get("pos"),RUNS[state.run].trace.length); renderRun(); } })();
+  if(q.get("skip")&&state.stage===1){ pause(); state.phase=4; state.linkShown=CAND.length; state.findShown=FINDINGS.length; state.resolveShown=RESOLVE.length; state.selF=null; applyPhase(); }
+  if(q.get("pos")&&state.stage===4){ rPause(); rstate.pos=Math.min(+q.get("pos"),RUNS[state.run].trace.length); renderRun(); }
+  if(q.get("change")&&state.stage===5){ uPause(); ustate.pos=+q.get("change"); renderUpdate(); } })();
 </script>
 
 </body>
