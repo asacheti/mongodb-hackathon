@@ -199,12 +199,16 @@ def confirm_alignments(ctx: v.Ctx, alignments: list[dict]) -> None:
 
 
 def build(merged: dict, submissions: list[dict], alignments: list[dict], questions: list[dict], decisions: list[dict],
-          *, contract_version: int = 1, db=None, supersedes: int | None = None, reason: str = "initial") -> dict:
+          *, contract_version: int = 1, db=None, supersedes: int | None = None, reason: str = "initial",
+          results: list[dict] | None = None, cert_extra: dict | None = None) -> dict:
+    """`results`: precomputed registry results (an incremental update passes re-run + carried results);
+    `cert_extra`: extra certificate fields (delta, checks re-run vs carried, signatures required, ...)."""
     subs = {s["org_id"]: s for s in submissions}
     use_case = merged["use_case_id"]
     ctx = v.Ctx(merged, subs, alignments, questions, db, "revalidate")
     confirm_alignments(ctx, alignments)
-    results = v.run(merged, submissions, alignments, questions, db=db, stage="revalidate")
+    if results is None:
+        results = v.run(merged, submissions, alignments, questions, db=db, stage="revalidate")
     interface = boundary_interface(ctx)
     projections = {org: project(merged, org, subs, interface, contract_version) for org in ("A", "B")}
     inv = {org: invariants(projections[org], subs[org], merged) for org in ("A", "B")}
@@ -223,7 +227,8 @@ def build(merged: dict, submissions: list[dict], alignments: list[dict], questio
     inputs = {"h_A": subs["A"]["hash"], "h_B": subs["B"]["hash"], "h_alignments": merged["inputs"]["h_alignments"],
               "h_answers": merged["inputs"].get("h_answers", sha256([])), "h_merge": merged["hash"],
               "h_projection_A": projections["A"]["hash"], "h_projection_B": projections["B"]["hash"], "h_boundary_interface": h_iface}
-    checks = [{"check": r["check"], "scope": r["scope"], "verdict": r["verdict"], "locality": r["locality"], "evidence": r["detail"]}
+    checks = [{"check": r["check"], "scope": r["scope"], "verdict": r["verdict"], "locality": r["locality"], "evidence": r["detail"],
+               **({"status": r["status"]} if r.get("status") else {})}
               for r in results + extra]
     issued = now()
     n_local = sum(c["locality"] == "local" for c in checks)
@@ -238,6 +243,7 @@ def build(merged: dict, submissions: list[dict], alignments: list[dict], questio
                        "accepted_default": q.get("accepted_default", False), "answer_hash": sha256(q.get("answer_data", q["answer"])),
                        "guardrails": [g["type"] for g in q.get("guardrails", [])]} for q in questions],
         "merger_version": MERGER_VERSION, "validator_version": VALIDATOR_VERSION,
+        **(cert_extra or {}),
         "issued_at": issued,
         "signatures": {"mediator": {"alg": "Ed25519", "kid": "mediator-2026-09", "signed_at": issued, "sig": "MOCK"},
                        "A": {"alg": "Ed25519", "kid": f"{subs['A'].get('org_name', 'A')}-k1", "signed_at": now(), "sig": "MOCK",

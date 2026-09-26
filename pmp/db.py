@@ -11,6 +11,7 @@ load_dotenv()
 COLLECTIONS = [
     "submissions", "steps_vec", "alignments", "merged", "findings",
     "merge_questions", "merge_log", "contracts", "projections", "handoffs", "rejections",
+    "elements", "derivations",   # the derivation index (design doc §6): what each guardrail / check was built from
 ]
 
 _memory = None  # set by use_memory(): an in-process stand-in for tests and --in-process runs

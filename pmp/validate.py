@@ -655,14 +655,17 @@ def _slug(s: str) -> str:
 
 
 def run(merged: dict, submissions: list[dict], alignments: list[dict], questions: list[dict] | None = None,
-        db: Any = None, stage: str = "validate") -> list[dict]:
+        db: Any = None, stage: str = "validate", only: set | None = None) -> list[dict]:
+    """`only`: a set of (check, scope) pairs to re-run; every other result is left to be carried forward."""
     ctx = Ctx(merged, {s["org_id"]: s for s in submissions}, alignments, questions or [], db, stage)
     use_case, version = merged["use_case_id"], merged["version"]
     results = []
     for check, fn, stages in REGISTRY:
-        if stage not in stages:
+        if stage not in stages or (only is not None and not any(c == check for c, _ in only)):
             continue
         for r in fn(ctx):
+            if only is not None and (check, r["scope"]) not in only:
+                continue
             assert r["check"] == check
             doc = {"_id": f"{use_case}:{stage}:v{version}:{check}:{_slug(r['scope'])}", "use_case_id": use_case,
                    "stage": stage, "merged_version": version, **r}
