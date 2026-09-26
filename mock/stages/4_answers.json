@@ -1,0 +1,25 @@
+{
+  "stage": 4,
+  "note": "Stage 4 interview answers for bnpl_checkout_v1 (mock/STAGES.md). Keyed by the finding check that triggered the question. \"default\" accepts the generated default; an object overrides it. Used by tests/test_decide.py and by `python -m pmp.decide --answers mock/stages/4_answers.json`.",
+  "answers": {
+    "DUP-02": {
+      "answer": "keep_both",
+      "fields": ["customer.name", "customer.email"],
+      "answered_by": {"org": "A", "user": "ops.lead"},
+      "ts": "2026-09-26T14:22:00Z",
+      "note": "keep both; send customer.name and customer.email; never customer_id or payment method"
+    },
+    "IO-01": "default",
+    "STR-03": {
+      "answer": "yes",
+      "predicate": {"op": "and", "args": [
+        {"op": "eq", "args": ["finalizedPaymentPlan.status", "authorized"]},
+        {"op": "eq", "args": ["totalLoanAmount", "invoice.total"]}
+      ]},
+      "answered_by": {"org": "A", "user": "finance.controller"},
+      "ts": "2026-09-26T14:31:00Z"
+    },
+    "PRE-01": "default",
+    "FAIL-01": "default"
+  }
+}

@@ -316,11 +316,13 @@ def pre_01(ctx: Ctx) -> list[dict]:
     out = []
     for e in ctx.boundary:
         R, S = ctx.node(e["to"]), ctx.node(e["from"])
-        need = fields_referenced(R.get("pre"))
+        need = {f for f in fields_referenced(R.get("pre")) if not _local_field(f, ctx.sub(R))}
         if not need:
             out.append(result("PRE-01", "pass", e["_id"], f"{R['name']} has no precondition on the handoff"))
             continue
-        have = {f["path"] for f in e["sender_fields"]} | {_leaf(f["path"]) for f in e["sender_fields"]} | set(e.get("allowlist") or [])
+        allowed = set(e.get("allowlist") or [])
+        have = ({f["path"] for f in e["sender_fields"]} | {_leaf(f["path"]) for f in e["sender_fields"]}
+                | allowed | {_leaf(a) for a in allowed})
         missing = sorted(f for f in need if f not in have and _leaf(f) not in have)
         if not missing:
             out.append(result("PRE-01", "pass", e["_id"], f"boundary schema covers {sorted(need)}"))
@@ -333,6 +335,13 @@ def pre_01(ctx: Ctx) -> list[dict]:
                           rung=5, stakes="high", stakes_reason="a loan identifier must be allowed to cross", owner=R["org_id"],
                           patch={"type": "allowlist", "fields": missing, "carried_by_sender": carried}))
     return out
+
+
+def _local_field(fld: str, sub: dict) -> bool:
+    """A field from the receiver's own data model (its first segment names one of the org's entities, e.g.
+    A's invoice.total). A receiver may compare handoff data against its own records; those fields are not
+    expected to cross the boundary. Anything else named in a precondition must arrive on the edge."""
+    return fld.split(".")[0] in sub.get("entities", {})
 
 
 def _policy_values(n: dict) -> dict:

@@ -326,7 +326,7 @@ def compile_northwind(path: Path = INPUTS / "northwind" / "SKILL.md", use_case: 
         "tools": [{"ref": k, **v} for k, v in doc.get("tools", {}).items()],
         "entities": doc.get("entities", {}), "roles": doc.get("roles", {}),
         "merge_preferences": doc.get("merge_preferences", {}), "outcomes": doc.get("outcomes", []),
-        "exceptions": doc.get("exceptions", []), "evidence": doc.get("evidence", {}),
+        "exceptions": doc.get("exceptions", []), "evidence": doc.get("evidence", {}), "terms": doc.get("terms", {}),
     }
     return _submission(org, fm.get("org_id", "northwind"), use_case, fm.get("procedure_version", "0"),
                        nodes, transitions, extra), findings
@@ -599,7 +599,7 @@ def compile_lakeside(arazzo_path: Path = INPUTS / "lakeside" / "bnpl-arazzo.yaml
         "tools": [{"ref": k, **v} for k, v in tool_cat.items()],
         "entities": prof.get("entities", {}), "roles": prof.get("roles", {}),
         "merge_preferences": prof.get("merge_preferences", {}), "outcomes": prof.get("outcomes", []),
-        "exceptions": prof.get("exceptions", []), "evidence": prof.get("evidence", {}),
+        "exceptions": prof.get("exceptions", []), "evidence": prof.get("evidence", {}), "terms": prof.get("terms", {}),
     }
     return _submission(org, prof.get("org_id", "lakeside"), use_case, prof.get("procedure_version", "0"),
                        nodes, transitions, extra), findings

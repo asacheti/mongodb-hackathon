@@ -301,7 +301,7 @@
           "to_role": "lender"
         }
       ],
-      "hash": "sha256:d4a45f62284407ee225d4518c1fe27bde34fa7a238e621e9e3081cc01aa1d6ad",
+      "hash": "sha256:e33683212dcb88b14a110c89b5bbd88dcc2af1b6e47a0896fd9c56617fbf2cc8",
       "merge_preferences": {
         "always_ask": [
           "anything touching money",
@@ -1129,6 +1129,12 @@
           ]
         }
       },
+      "terms": {
+        "invoice": "Stripe Invoice object; monetary values are immutable after finalize.",
+        "paid_out_of_band": "Marking a Stripe invoice paid when money arrived outside Stripe (POST /v1/invoices/{id}/pay with paid_out_of_band=true). Fires invoice.paid.",
+        "price_id": "Stripe Price ID for the product; stable across orders.",
+        "unit_amount": "Stripe line-item price in minor units (cents) for the invoice currency."
+      },
       "tools": [
         {
           "effect": "side_effect",
@@ -1511,7 +1517,7 @@
           "step": "updateOrderStatus"
         }
       ],
-      "hash": "sha256:ed861469a1e84463fb0beeef5d19b344a0a52491cfff46b4494ba202ce7d1171",
+      "hash": "sha256:156503ca1d374c13eaed17919f727ee5c51fbb69c206836f4a3cf841793b4462",
       "merge_preferences": {
         "always_ask": [
           "anything touching money",
@@ -2012,6 +2018,12 @@
             "override eligibility rules"
           ]
         }
+      },
+      "terms": {
+        "eligibilityCheckRequired": "Whether the customer must be checked before terms are shown.",
+        "loanTransactionId": "Lakeside's ID for the loan; needed to activate it later.",
+        "productCode": "Lakeside's own catalog code for a financeable product. Not the merchant's SKU.",
+        "purchaseAmount": "Money in major units with an ISO-4217 currency, e.g. { currency: USD, amount: 2780.00 }."
       },
       "tools": [
         {
