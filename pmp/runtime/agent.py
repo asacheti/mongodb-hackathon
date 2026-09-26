@@ -432,6 +432,10 @@ def create_app(agent: Agent):
     def state():
         return agent.state()
 
+    @app.get("/health")
+    def health():
+        return {"ok": True, "org": agent.org, "contract_version": agent.contract["version"] if agent.contract else None}
+
     return app
 
 

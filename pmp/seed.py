@@ -59,7 +59,10 @@ def main(argv: list[str] | None = None) -> int:
     created = ensure_collections()
     print(f"seed: collections ready ({len(db.COLLECTIONS)} total, {len(created)} created)")
     db.reset(a.use_case)
-    print(f"seed: reset use case {a.use_case}")
+    from datetime import datetime, timezone
+    ts = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    db.col("merge_log").insert_one({"_id": f"{a.use_case}:seed", "use_case_id": a.use_case, "type": "seed", "ts": ts})
+    print(f"seed: reset use case {a.use_case} at {ts}")
     print(f"seed: vector index {VECTOR_INDEX} {ensure_vector_index(wait=not a.no_wait)}")
     return 0
 

@@ -1,12 +1,206 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>PMP mediator</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{font-family:system-ui,sans-serif;margin:2rem;color:#222}pre{background:#f4f4f4;padding:1rem;overflow:auto}</style>
-</head><body>
-<h1>PMP: Procedure Merge Profile</h1>
-<p>Placeholder page. The three-column UI arrives in P7. Live state:</p>
-<pre id="state">loading…</pre>
+<title>PMP mediator</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1c2128; --muted:#6b7280; --line:#e5e7eb; --a:#0f766e; --b:#b45309; --m:#4f46e5;
+          --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --grey:#6b7280; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif }
+  header { display:flex; align-items:center; gap:16px; padding:12px 20px; background:#111827; color:#fff; flex-wrap:wrap }
+  header h1 { font-size:16px; margin:0; letter-spacing:.02em }
+  header .sub { color:#9ca3af; font-size:12px }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid transparent }
+  .pill.active { background:#dcfce7; color:var(--ok) } .pill.suspect { background:#fef3c7; color:var(--warn) }
+  .pill.superseded, .pill.none { background:#e5e7eb; color:var(--grey) }
+  .clock { font-variant-numeric:tabular-nums; font-size:18px; font-weight:700; margin-left:auto }
+  .clock small { display:block; font-size:10px; color:#9ca3af; font-weight:400; text-align:right }
+  .seg { display:inline-flex; border:1px solid #374151; border-radius:8px; overflow:hidden }
+  .seg button { background:transparent; color:#d1d5db; border:0; padding:6px 12px; cursor:pointer; font-size:12px }
+  .seg button.on { background:#fff; color:#111827; font-weight:600 } .seg button:disabled { opacity:.4; cursor:not-allowed }
+  .strip { display:flex; gap:6px; padding:10px 20px; background:#fff; border-bottom:1px solid var(--line); overflow-x:auto }
+  .chip { padding:6px 10px; border-radius:8px; border:1px solid var(--line); font-size:12px; white-space:nowrap; color:var(--muted); background:#fafafa }
+  .chip.done { border-color:#86efac; background:#f0fdf4; color:var(--ok) } .chip.now { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8 }
+  .chip b { font-weight:700 } .chip .n { opacity:.7; margin-left:4px }
+  main { display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:14px; padding:14px 20px }
+  @media (max-width: 1000px) { main { grid-template-columns:1fr } }
+  .col { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-height:300px }
+  .col h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 10px; display:flex; align-items:center; gap:8px }
+  .col.A h2 { color:var(--a) } .col.B h2 { color:var(--b) } .col.M h2 { color:var(--m) }
+  .dot { width:8px; height:8px; border-radius:50%; background:currentColor; display:inline-block }
+  ul.nodes { list-style:none; margin:0; padding:0 }
+  ul.nodes li { display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:6px; font-size:13px }
+  ul.nodes li .st { width:14px; height:14px; border-radius:50%; border:2px solid #d1d5db; flex:none }
+  ul.nodes li.done .st { background:var(--ok); border-color:var(--ok) } ul.nodes li.now .st { border-color:#2563eb; background:#bfdbfe }
+  ul.nodes li.done { color:#111 } ul.nodes li { color:var(--muted) }
+  ul.nodes li .tag { font-size:10px; padding:1px 6px; border-radius:999px; background:#ede9fe; color:#5b21b6; margin-left:auto }
+  ul.nodes li .tag.gate { background:#fef3c7; color:#92400e } ul.nodes li .tag.hand { background:#dbeafe; color:#1e40af }
+  .sealed { border:2px dashed #9ca3af; border-radius:12px; padding:14px; background:repeating-linear-gradient(135deg,#fafafa,#fafafa 8px,#f3f4f6 8px,#f3f4f6 16px) }
+  .sealed h3 { margin:0 0 6px; font-size:14px } .sealed .k { font-size:11px; text-transform:uppercase; color:var(--muted); margin-top:10px }
+  .sealed code { font-size:12px } .sealed .why { margin-top:12px; font-size:12px; color:var(--muted) }
+  table { width:100%; border-collapse:collapse; font-size:12px } th { text-align:left; color:var(--muted); font-weight:600; padding:4px 6px; border-bottom:1px solid var(--line) }
+  td { padding:4px 6px; border-bottom:1px solid #f1f5f9; vertical-align:top }
+  .v { font-weight:700 } .v.pass { color:var(--ok) } .v.fail { color:var(--bad) } .v.guarded { color:var(--warn) }
+  .sec { margin-top:14px } .sec h3 { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px }
+  .q { border-left:3px solid var(--m); padding:4px 8px; margin:6px 0; font-size:12px; background:#fafaff } .q b { color:var(--m) }
+  .q .ans { color:#374151 } .q .def { color:var(--muted); font-size:11px }
+  .rej { border-left:3px solid var(--bad); padding:4px 8px; margin:6px 0; font-size:12px; background:#fff7f7 }
+  .patch { border-left:3px solid var(--ok); padding:4px 8px; margin:6px 0; font-size:12px; background:#f6fff8 }
+  .runs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px } .runs .chip { padding:3px 8px }
+  #log { margin:0 20px 20px; background:#0b1020; color:#d1d5db; border-radius:12px; padding:12px 14px; height:260px; overflow:auto; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace }
+  #log .t { color:#6b7280 } #log .A { color:#5eead4 } #log .B { color:#fbbf24 } #log .M { color:#a5b4fc } #log .bad { color:#fca5a5 } #log .ok { color:#86efac }
+  .logh { display:flex; justify-content:space-between; padding:0 20px 6px; font-size:12px; color:var(--muted) }
+  .empty { color:var(--muted); font-size:12px; font-style:italic }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>PMP · Procedure Merge Profile</h1><div class="sub" id="usecase">bnpl_checkout_v1 · Northwind (merchant) × Lakeside (lender) · mediator on MongoDB Atlas</div></div>
+  <span id="contract" class="pill none">no contract yet</span>
+  <div class="seg" id="viewas">
+    <button data-v="M" class="on">Mediator view</button>
+    <button data-v="A">View as Northwind</button>
+    <button data-v="B">View as Lakeside</button>
+  </div>
+  <div class="clock"><span id="clock">00:00</span><small id="clocksub">seed → run 0002</small></div>
+</header>
+<div class="strip" id="strip"></div>
+<main>
+  <section class="col A"><h2><span class="dot"></span>Northwind · ORG_A · merchant</h2><div id="colA"></div></section>
+  <section class="col M"><h2><span class="dot"></span>Atlas mediator</h2><div id="colM"></div></section>
+  <section class="col B"><h2><span class="dot"></span>Lakeside · ORG_B · lender</h2><div id="colB"></div></section>
+</main>
+<div class="logh"><span>Activity (agents, mediator, contracts) · polled every second</span><span id="logmeta"></span></div>
+<pre id="log"></pre>
+
 <script>
-async function tick(){try{const r=await fetch('/state');document.getElementById('state').textContent=JSON.stringify(await r.json(),null,2)}catch(e){document.getElementById('state').textContent=String(e)}}
-tick();setInterval(tick,1000);
-</script></body></html>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const ORG = { A: "Northwind", B: "Lakeside" };
+  let view = "M", state = null, seedTs = null, doneTs = null, logPinned = true;
+
+  document.querySelectorAll("#viewas button").forEach((b) => b.addEventListener("click", () => {
+    if (b.disabled) return; view = b.dataset.v;
+    document.querySelectorAll("#viewas button").forEach((x) => x.classList.toggle("on", x === b)); render();
+  }));
+  $("log").addEventListener("scroll", () => { const el = $("log"); logPinned = el.scrollTop + el.clientHeight >= el.scrollHeight - 8; });
+
+  const STAGES = [
+    ["seed", (s) => !!s.stopwatch.seed_ts], ["compile", (s) => s.stages.compile >= 2], ["align", (s) => s.stages.align > 0],
+    ["merge", (s) => s.stages.merge >= 1], ["validate", (s) => s.stages.validate > 0], ["decide", (s) => s.stages.decide > 0],
+    ["contract", (s) => s.stages.contract > 0],
+    ["run 0001", (s) => (s.runs["0001"] || []).some((h) => h.edge === "h3" && h.status === "accepted")],
+    ["run 0002", (s) => (s.runs["0002"] || []).some((h) => h.edge === "h3" && h.status === "accepted")],
+  ];
+  const counts = (s) => ({ seed: "", compile: s.stages.compile, align: s.stages.align, merge: s.stages.merge, validate: s.stages.validate,
+                           decide: s.stages.decide, contract: s.stages.contract, "run 0001": (s.runs["0001"] || []).length, "run 0002": (s.runs["0002"] || []).length });
+
+  function fmt(ms) { const t = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
+  function tickClock() {
+    if (!seedTs) { $("clock").textContent = "00:00"; return; }
+    const end = doneTs ? new Date(doneTs) : new Date();
+    $("clock").textContent = fmt(end - new Date(seedTs));
+    $("clocksub").textContent = doneTs ? "seed → run 0002 ✓" : "seed → run 0002 · running";
+  }
+  setInterval(tickClock, 250);
+
+  function renderStrip(s) {
+    let firstOpen = true;
+    $("strip").innerHTML = STAGES.map(([name, done]) => {
+      const d = done(s), now = !d && firstOpen; if (!d) firstOpen = false;
+      return `<span class="chip ${d ? "done" : now ? "now" : ""}"><b>${esc(name)}</b><span class="n">${esc(counts(s)[name])}</span></span>`;
+    }).join("");
+  }
+
+  function renderContract(s) {
+    const c = s.contract, el = $("contract");
+    if (!c) { el.className = "pill none"; el.textContent = "no contract yet"; }
+    else { el.className = "pill " + c.status; el.textContent = `${c.contract_id} · v${c.version} · ${c.status}` + (c.reason && c.reason !== "initial" ? ` · ${c.reason}` : ""); }
+    document.querySelectorAll("#viewas button[data-v='A'],#viewas button[data-v='B']").forEach((b) => { b.disabled = !c; b.title = c ? "" : "available after signing"; });
+  }
+
+  function latestRun(agent) { const runs = agent && agent.runs ? Object.keys(agent.runs).sort() : []; return runs.length ? agent.runs[runs[runs.length - 1]] : null; }
+
+  function orgColumn(org, s) {
+    const agent = (s.agents || {})[org] || {}, proj = (s.projections || {})[org];
+    if (agent.error && !proj) return `<p class="empty">agent ${org} not running (${esc(agent.error)})</p>`;
+    const run = latestRun(agent), done = new Set(run ? run.done : []), cur = run ? run.current : null;
+    const nodes = (agent.projection && agent.projection.nodes) || (proj ? proj.nodes : []);
+    const runChips = agent.runs ? Object.values(agent.runs).map((r) => `<span class="chip ${r.status === "completed" ? "done" : r.status === "rejected" ? "" : "now"}">run ${esc(r.run)} · ${esc(r.status)}${r.outcome ? " · " + esc(r.outcome) : ""}</span>`).join("") : "";
+    const li = nodes.filter((n) => !n.opaque).map((n) => {
+      const cls = done.has(n.id) ? "done" : n.id === cur ? "now" : "";
+      const tag = n.origin ? `<span class="tag">adapter · ${esc(n.origin)}</span>` : n.kind === "human_gate" ? `<span class="tag gate">human gate</span>`
+                : (n.visibility || "").startsWith("handoff") ? `<span class="tag hand">${esc(n.visibility)}</span>` : "";
+      return `<li class="${cls}"><span class="st"></span>${esc(n.name)}${tag}</li>`;
+    }).join("");
+    const inv = proj ? `<div class="sec"><h3>local invariants · contract v${proj.contract_version}</h3>${proj.invariants.map((i) => `<span class="chip ${i.verdict === "pass" ? "done" : ""}">${esc(i.check)} ${esc(i.verdict)}</span>`).join(" ")} <span class="chip ${proj.privacy === "pass" ? "done" : ""}">PRIV-01 ${esc(proj.privacy || "?")}</span></div>` : "";
+    return `<div class="runs">${runChips || '<span class="empty">no runs yet</span>'}</div><ul class="nodes">${li || '<li class="empty">projection not loaded</li>'}</ul>${inv}`;
+  }
+
+  function sealedBox(partner, s) {
+    const me = partner === "A" ? "B" : "A", proj = (s.projections || {})[me];
+    if (!proj || !proj.opaque) return `<p class="empty">available after signing</p>`;
+    const o = proj.opaque, it = o.interface;
+    const list = (arr, verb) => arr.length ? arr.map((e) => `<div><b>${esc(e.edge)}</b> ${verb} <code>${esc((e.fields || []).join(", "))}</code>${e.guard ? `<div class="def">guard: <code>${esc(e.guard)}</code></div>` : ""}${e.purpose ? `<div class="def">${esc(e.purpose)}</div>` : ""}</div>`).join("") : `<span class="empty">none</span>`;
+    return `<div class="sealed"><h3>${esc(ORG[partner])} · sealed</h3>
+      <div>One opaque node. ${esc(ORG[me])}'s projection carries only this boundary interface: what goes in, what comes out, how it can end.</div>
+      <div class="k">receives</div>${list(it.receives, "←")}
+      <div class="k">returns</div>${list(it.returns, "→")}
+      <div class="k">terminal outcomes</div><code>${esc(it.outcomes.join(" | "))}</code>
+      <div class="why">None of ${esc(ORG[partner])}'s private chain, tools or notes are here (PRIV-01 ${esc(proj.privacy || "?")}, INV-1..4 ${proj.invariants.every((i) => i.verdict === "pass") ? "pass" : "check"}).</div></div>`;
+  }
+
+  function mediatorColumn(s) {
+    const f = (s.findings || []).filter((x) => x.stage === "validate");
+    const findings = f.length ? `<table><tr><th>check</th><th>verdict</th><th>scope</th><th>stakes</th><th>resolved</th></tr>${f.map((x) =>
+      `<tr><td>${esc(x.check)}</td><td class="v ${esc(x.verdict)}">${esc(x.verdict)}</td><td>${esc(x.scope)}</td><td>${esc(x.stakes || "")}</td><td>${esc(x.resolved_by || "–")}</td></tr>`).join("")}</table>` : `<p class="empty">no findings yet</p>`;
+    const qs = (s.questions || []).map((q) => `<div class="q"><b>${esc(q._id)}</b> ${esc(q.trigger)} → ${esc(ORG[q.to_org])}/${esc(q.to_role)} ${q.accepted_default ? '<span class="def">(default accepted)</span>' : ""}<div>${esc(q.text)}</div><div class="ans">A: ${esc(q.answer || "pending")}</div></div>`).join("");
+    const contracts = (s.contracts || []).map((c) => `<span class="pill ${esc(c.status)}">v${c.version} ${esc(c.status)}${c.reason && c.reason !== "initial" ? " · " + esc(c.reason) : ""}</span>`).join(" ");
+    const rejs = (s.rejections || []).map((r) => `<div class="rej"><b>${esc(r.code)}</b> on ${esc(r.edge)} · run ${esc(r.run)} seq ${esc(r.seq)} · receiver ${esc(ORG[r.receiver])}${r.missing ? ` · missing <code>${esc(r.missing.join(", "))}</code>` : ""}${r.field ? ` · <code>${esc(r.field)}</code>` : ""}</div>`).join("");
+    const patches = (s.merge_log || []).filter((e) => e.type === "patch").map((e) => `<div class="patch"><b>patch → contract v${esc(e.contract_version)}</b> (supersedes v${esc(e.supersedes)}) · ${esc(e.status)}${(e.plan && e.plan.ops || []).map((o) => `<div>${esc(o.op)} ${esc(o.adapter || "")}: <code>${esc(o.transform ? o.transform.to + " = " + o.transform.expr : "")}</code> <span class="def">from ${esc(o.found_in || "own catalog")}</span></div>`).join("")}</div>`).join("");
+    const cert = s.contract ? `<div class="def">certificate ${esc(s.contract.certificate_id)} · ${esc(s.certificate_checks)} checks</div>` : "";
+    return `<div class="sec"><h3>contracts</h3>${contracts || '<span class="empty">none</span>'}${cert}</div>
+      <div class="sec"><h3>validation v1 · ${f.length} findings</h3>${findings}</div>
+      <div class="sec"><h3>merge interview</h3>${qs || '<p class="empty">no questions yet</p>'}</div>
+      <div class="sec"><h3>runtime</h3>${rejs || '<p class="empty">no rejections</p>'}${patches}</div>`;
+  }
+
+  function renderLog(s) {
+    const rows = [];
+    for (const org of ["A", "B"]) for (const e of ((s.agents || {})[org] || {}).log || []) rows.push({ ts: e.ts, who: org, txt: `${e.run ? "run " + e.run + " · " : ""}${e.node ? e.node + " · " : ""}${e.event}: ${e.detail}`, cls: /reject|fail/.test(e.event) ? "bad" : /accepted|completed/.test(e.event) ? "ok" : "" });
+    for (const r of s.rejections || []) rows.push({ ts: r.ts, who: "M", txt: `rejection ${r.code} on ${r.edge} (run ${r.run}, seq ${r.seq}); contract → suspect`, cls: "bad" });
+    for (const e of s.merge_log || []) if (e.type === "patch") rows.push({ ts: e.ts, who: "M", txt: `mediator patch → contract v${e.contract_version} active, v${e.supersedes} superseded`, cls: "ok" });
+    for (const c of s.contracts || []) rows.push({ ts: c.issued_at, who: "M", txt: `contract v${c.version} issued (${c.reason})`, cls: "ok" });
+    if (s.stopwatch.seed_ts) rows.push({ ts: s.stopwatch.seed_ts, who: "M", txt: "seed: collections reset, vector index ready", cls: "" });
+    rows.sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
+    const el = $("log");
+    el.innerHTML = rows.slice(-150).map((r) => `<div><span class="t">${esc(String(r.ts || "").replace("T", " ").replace("Z", ""))}</span> <span class="${r.who}">${r.who === "M" ? "mediator" : ORG[r.who]}</span> <span class="${r.cls}">${esc(r.txt)}</span></div>`).join("");
+    $("logmeta").textContent = `${rows.length} events`;
+    if (logPinned) el.scrollTop = el.scrollHeight;
+  }
+
+  function render() {
+    if (!state) return;
+    const s = state;
+    renderContract(s); renderStrip(s);
+    $("colA").innerHTML = view === "B" ? sealedBox("A", s) : orgColumn("A", s);
+    $("colB").innerHTML = view === "A" ? sealedBox("B", s) : orgColumn("B", s);
+    $("colM").innerHTML = mediatorColumn(s);
+    renderLog(s);
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch("/state", { cache: "no-store" }); state = await r.json();
+      seedTs = state.stopwatch.seed_ts; doneTs = state.stopwatch.done_ts; $("usecase").textContent = `${state.use_case_id} · Northwind (merchant) × Lakeside (lender) · mediator on MongoDB Atlas`;
+      render();
+    } catch (e) { $("logmeta").textContent = "state unavailable: " + e; }
+  }
+  poll(); setInterval(poll, 1000);
+})();
+</script>
+</body>
+</html>
