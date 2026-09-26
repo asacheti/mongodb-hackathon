@@ -1,0 +1,2237 @@
+{
+  "findings": [
+    {
+      "_id": "bnpl_checkout_v1:compile:A:LINT-02:1",
+      "check": "LINT-02",
+      "detail": "\"Orders of USD 10,000 or more need a manager's approval before shipping.\" is a policy in prose with no policy field -> policy {requires_human_approval: true, max_amount: {USD, 10000}} plus a HUMAN_GATE node (attached to the existing HUMAN_GATE node).",
+      "locality": "local",
+      "owner_org": "A",
+      "resolved_by": "compile:auto-corrected, flagged for owner",
+      "scope": "SKILL.md step approve_large_order",
+      "stage": "compile",
+      "use_case_id": "bnpl_checkout_v1",
+      "verdict": "fail"
+    },
+    {
+      "_id": "bnpl_checkout_v1:compile:B:LINT-01:1",
+      "check": "LINT-01",
+      "detail": "References $steps.authenticateCustomerAndAuthorizeLoan.outputs.redirectAuthToken (itself); the value is produced by initiateBnplTransaction. Compiled with corrected source; flagged for the owner.",
+      "locality": "local",
+      "owner_org": "B",
+      "resolved_by": "compile:auto-corrected, flagged for owner",
+      "scope": "steps[4].parameters.redirectAuthToken",
+      "stage": "compile",
+      "use_case_id": "bnpl_checkout_v1",
+      "verdict": "fail"
+    },
+    {
+      "_id": "bnpl_checkout_v1:compile:B:LINT-01:2",
+      "check": "LINT-01",
+      "detail": "initiateBnplTransaction declares redirectAuthToken, loanTransactionResourceUrl, not loanTransactionId. Compiled as a derived output of initiateBnplTransaction; flagged for the owner.",
+      "locality": "local",
+      "owner_org": "B",
+      "resolved_by": "compile:auto-corrected, flagged for owner",
+      "scope": "steps[5].parameters.loanTransactionId",
+      "stage": "compile",
+      "use_case_id": "bnpl_checkout_v1",
+      "verdict": "fail"
+    }
+  ],
+  "submissions": [
+    {
+      "_id": "bnpl_checkout_v1:A",
+      "description": "Take a checkout basket to a paid, fulfilled order using Stripe Invoicing. Create the customer and invoice, finalize, collect payment (card or a partner's financing), wait for invoice.paid, then ship. Large orders need a manager's approval before shipping.\n",
+      "entities": {
+        "approval": {
+          "fields": {
+            "approver": {
+              "may_cross": "never",
+              "sensitivity": "internal",
+              "type": "string"
+            },
+            "granted": {
+              "type": "boolean"
+            }
+          }
+        },
+        "customer": {
+          "examples": [
+            {
+              "email": "jenny.rosen@example.com",
+              "name": "Jenny Rosen"
+            }
+          ],
+          "fields": {
+            "customer_id": {
+              "may_cross": "never",
+              "pattern": "cus_[A-Za-z0-9]+",
+              "sensitivity": "internal",
+              "type": "string"
+            },
+            "email": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            "name": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            "payment_method": {
+              "may_cross": "never",
+              "sensitivity": "financial",
+              "type": "string"
+            },
+            "shipping_address": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "address"
+            }
+          }
+        },
+        "invoice": {
+          "fields": {
+            "currency": {
+              "type": "enum",
+              "values": [
+                "USD"
+              ]
+            },
+            "days_until_due": {
+              "default": 30,
+              "type": "integer"
+            },
+            "invoice_id": {
+              "pattern": "in_[A-Za-z0-9]+",
+              "source": "stripe:invoices.create",
+              "type": "string"
+            },
+            "status": {
+              "type": "enum",
+              "values": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ]
+            },
+            "total_minor": {
+              "currency": "USD",
+              "type": "integer",
+              "unit": "cents"
+            }
+          }
+        },
+        "line_item": {
+          "fields": {
+            "price_id": {
+              "pattern": "price_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            "quantity": {
+              "min": 1,
+              "type": "integer"
+            },
+            "unit_amount_minor": {
+              "currency": "USD",
+              "type": "integer",
+              "unit": "cents"
+            }
+          }
+        }
+      },
+      "evidence": {
+        "accepts_from_partner": {
+          "financing_authorized": {
+            "plus": "loan_reference",
+            "requires_all": [
+              "plan_status",
+              "plan_total"
+            ]
+          }
+        },
+        "audit_log": "every decision with actor, time, inputs hash",
+        "produces": [
+          "stripe_event_log",
+          "approval_record",
+          "shipment_record"
+        ]
+      },
+      "exceptions": [
+        {
+          "action": "fall back to card payment (A5); keep the finalized invoice",
+          "case": "lender_declined"
+        },
+        {
+          "action": "send invoice for card payment; note financing as expired",
+          "case": "lender_no_response_after_sla"
+        },
+        {
+          "action": "offer another attempt; after 2 failures send invoice by email",
+          "case": "payment_failed"
+        },
+        {
+          "action": "cancel shipment if not dispatched; else collect by card",
+          "case": "shipment_created_then_loan_rejected"
+        }
+      ],
+      "handoffs": [
+        {
+          "direction": "out",
+          "expects_back": {
+            "loan_reference": {
+              "optional": true,
+              "type": "string"
+            },
+            "plan_status": {
+              "values": [
+                "authorized",
+                "declined",
+                "pending_customer_action"
+              ]
+            },
+            "plan_total": {
+              "currency": "USD",
+              "type": "money"
+            }
+          },
+          "id": "H1_request_financing",
+          "never_send": [
+            "customer.customer_id",
+            "customer.payment_method",
+            "invoice.invoice_id",
+            "approval.*"
+          ],
+          "payload": {
+            "basket": [
+              {
+                "amount": {
+                  "convert": "to_major_units",
+                  "currency": "USD",
+                  "from": "line_item.unit_amount_minor"
+                },
+                "product_ref": {
+                  "from": "line_item.price_id"
+                },
+                "quantity": {
+                  "from": "line_item.quantity"
+                }
+              }
+            ],
+            "customer_email": {
+              "from": "customer.email"
+            },
+            "customer_name": {
+              "from": "customer.name"
+            },
+            "total": {
+              "convert": "to_major_units",
+              "currency": "USD",
+              "from": "invoice.total_minor"
+            }
+          },
+          "purpose": "Ask the lender to finance the finalized basket for this customer.",
+          "retries": {
+            "backoff": "exponential",
+            "max": 2
+          },
+          "sla_expected": {
+            "final": "24h",
+            "interim": "none",
+            "negotiable": true
+          },
+          "step": "A4",
+          "to_role": "lender"
+        },
+        {
+          "accept": {
+            "loan_reference": {
+              "optional": true
+            },
+            "plan_status": {
+              "required": true
+            },
+            "plan_total": {
+              "must_equal": "invoice.total",
+              "required": true
+            }
+          },
+          "direction": "in",
+          "from_role": "lender",
+          "id": "H2_receive_plan",
+          "purpose": "Receive the lender's financing decision.",
+          "step": "A6",
+          "true": {
+            "authorized": "mark the invoice paid out of band (finance_controller rule), continue to A6 as paid",
+            "declined": "fall back to A5 card payment"
+          }
+        },
+        {
+          "direction": "out",
+          "expects_back": {
+            "ack": {
+              "values": [
+                "activated",
+                "rejected"
+              ]
+            }
+          },
+          "id": "H3_report_fulfilled",
+          "never_send": [
+            "shipment_id",
+            "customer.shipping_address",
+            "approval.*"
+          ],
+          "payload": {
+            "fulfilled_at": {
+              "from": "shipment.created_at"
+            },
+            "loan_reference": {
+              "from": "handoff.H2.loan_reference"
+            }
+          },
+          "purpose": "Tell the lender the order shipped so the financing activates.",
+          "sla_expected": {
+            "final": "1h",
+            "negotiable": true
+          },
+          "step": "A8",
+          "to_role": "lender"
+        }
+      ],
+      "hash": "sha256:d4a45f62284407ee225d4518c1fe27bde34fa7a238e621e9e3081cc01aa1d6ad",
+      "merge_preferences": {
+        "always_ask": [
+          "anything touching money",
+          "pii",
+          "what counts as paid"
+        ],
+        "auto_countersign": {
+          "allowed_for": [
+            "adapter_change_from_own_catalog"
+          ],
+          "max_per_week": 5
+        },
+        "auto_resolve": [
+          "unit_conversion",
+          "field_rename",
+          "extend_from_own_tools"
+        ],
+        "dedupe_allowed_for": [
+          {
+            "effect": "verify"
+          },
+          {
+            "obligation": "none"
+          }
+        ],
+        "default_owner_for_adapters": "self",
+        "question_routing": {
+          "money": "finance_controller",
+          "operations": "ops.lead",
+          "pii": "privacy_lead"
+        }
+      },
+      "nodes": [
+        {
+          "_id": "A.create_customer",
+          "branches": [
+            {
+              "otherwise": true,
+              "then": "A.create_invoice"
+            }
+          ],
+          "confidential_notes": "Customer IDs are reused across orders; never expose the ID.",
+          "dedupe": "never",
+          "inputs": [
+            {
+              "may_cross": "ask",
+              "path": "customer.name",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.email",
+              "sensitivity": "pii",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "create_customer",
+          "obligation": {
+            "reason": "Stripe requires a Customer to invoice",
+            "required": true
+          },
+          "on_failure": {
+            "retry": 2,
+            "then": {
+              "escalate_to": "ops_manager"
+            }
+          },
+          "org_id": "A",
+          "outputs": [
+            {
+              "may_cross": "never",
+              "path": "customer.customer_id",
+              "pattern": "cus_[A-Za-z0-9]+",
+              "sensitivity": "internal",
+              "type": "string"
+            }
+          ],
+          "post": {
+            "args": [
+              "customer.customer_id"
+            ],
+            "op": "exists"
+          },
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A1. Create a customer",
+            "step": "A1"
+          },
+          "text": "create_customer: Create the Stripe Customer with name and email. This is a billing record, not an identity check.",
+          "tool": {
+            "effect": "side_effect",
+            "idempotent": true,
+            "name": "customers.create",
+            "reversible": "partial",
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "idempotent": true,
+              "name": "customers.create",
+              "reversible": "partial",
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.create_invoice",
+          "branches": [
+            {
+              "otherwise": true,
+              "then": "A.add_items"
+            }
+          ],
+          "inputs": [
+            {
+              "may_cross": "never",
+              "path": "customer.customer_id",
+              "pattern": "cus_[A-Za-z0-9]+",
+              "sensitivity": "internal",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "create_invoice",
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "path": "invoice.status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ]
+            }
+          ],
+          "post": {
+            "args": [
+              "invoice.status",
+              "draft"
+            ],
+            "op": "eq"
+          },
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A2. Create an invoice",
+            "step": "A2"
+          },
+          "text": "create_invoice: Create the invoice with collection_method=send_invoice and days_until_due=30.",
+          "tool": {
+            "effect": "side_effect",
+            "name": "invoices.create",
+            "reversible": true,
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "invoices.create",
+              "reversible": true,
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.add_items",
+          "branches": [
+            {
+              "otherwise": true,
+              "then": "A.finalize_invoice"
+            }
+          ],
+          "inputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "path": "line_item.price_id",
+              "pattern": "price_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "path": "line_item.quantity",
+              "type": "integer"
+            },
+            {
+              "currency": "USD",
+              "path": "line_item.unit_amount_minor",
+              "type": "integer",
+              "unit": "cents"
+            }
+          ],
+          "kind": "action",
+          "name": "add_items",
+          "org_id": "A",
+          "outputs": [
+            {
+              "currency": "USD",
+              "path": "invoice.total_minor",
+              "type": "integer",
+              "unit": "cents"
+            }
+          ],
+          "pre": {
+            "args": [
+              "line_item.count",
+              250
+            ],
+            "op": "lte"
+          },
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A3. Add invoice items",
+            "step": "A3"
+          },
+          "text": "add_items: One invoice item per basket line. Stripe caps an invoice at 250 items.",
+          "tool": {
+            "effect": "side_effect",
+            "name": "invoiceitems.create",
+            "reversible": true,
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "invoiceitems.create",
+              "reversible": true,
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.finalize_invoice",
+          "branches": [
+            {
+              "then": "H1_request_financing",
+              "when": {
+                "args": [
+                  "checkout.payment_choice",
+                  "pay_later"
+                ],
+                "op": "eq"
+              }
+            },
+            {
+              "otherwise": true,
+              "then": "A.collect_payment"
+            }
+          ],
+          "dedupe": "never",
+          "handoffs": [
+            "H1_request_financing"
+          ],
+          "inputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "finalize_invoice",
+          "obligation": {
+            "reason": "amounts must be locked before any payment",
+            "required": true
+          },
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "invoice.status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ]
+            },
+            {
+              "currency": "USD",
+              "path": "invoice.total_minor",
+              "type": "integer",
+              "unit": "cents"
+            },
+            {
+              "path": "line_item.price_id",
+              "pattern": "price_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "path": "line_item.quantity",
+              "type": "integer"
+            },
+            {
+              "currency": "USD",
+              "path": "line_item.unit_amount_minor",
+              "type": "integer",
+              "unit": "cents"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.name",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.email",
+              "sensitivity": "pii",
+              "type": "string"
+            }
+          ],
+          "post": {
+            "args": [
+              "invoice.status",
+              "open"
+            ],
+            "op": "eq"
+          },
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A4. Finalize the invoice",
+            "step": "A4"
+          },
+          "text": "finalize_invoice: After this the amounts cannot change. This is the point where a financing partner can be asked to cover the total.",
+          "tool": {
+            "effect": "side_effect",
+            "name": "invoices.finalize",
+            "reversible": false,
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "invoices.finalize",
+              "reversible": false,
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_out"
+        },
+        {
+          "_id": "A.collect_payment",
+          "branches": [
+            {
+              "otherwise": true,
+              "then": "A.await_invoice_paid"
+            }
+          ],
+          "inputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "may_cross": "never",
+              "path": "customer.payment_method",
+              "sensitivity": "financial",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "collect_payment",
+          "on_failure": {
+            "retry": 1,
+            "then": {
+              "escalate_to": "ops_manager"
+            }
+          },
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "invoice.status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ]
+            }
+          ],
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A5. Collect payment",
+            "step": "A5"
+          },
+          "text": "collect_payment: Card payment through the Payment Element, or send the invoice for later payment. Also the fallback when a financing partner declines.",
+          "tool": {
+            "effect": "side_effect",
+            "idempotent": true,
+            "money": true,
+            "name": "invoices.pay",
+            "reversible": false,
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "invoices.send",
+              "reversible": false,
+              "server": "stripe"
+            },
+            {
+              "effect": "side_effect",
+              "idempotent": true,
+              "money": true,
+              "name": "invoices.pay",
+              "reversible": false,
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.await_invoice_paid",
+          "branches": [
+            {
+              "then": "A.approve_large_order",
+              "when": {
+                "args": [
+                  "invoice.status",
+                  "paid"
+                ],
+                "op": "eq"
+              }
+            },
+            {
+              "then": "A.collect_payment",
+              "when": {
+                "args": [
+                  "webhook.event",
+                  "invoice.payment_failed"
+                ],
+                "op": "eq"
+              }
+            },
+            {
+              "otherwise": true,
+              "then": "A.T_cancelled_unpaid"
+            }
+          ],
+          "handoffs": [
+            "H2_receive_plan"
+          ],
+          "inputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            }
+          ],
+          "kind": "wait",
+          "name": "await_invoice_paid",
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "invoice.status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "open",
+                "paid",
+                "uncollectible",
+                "void"
+              ]
+            }
+          ],
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A6. Wait for invoice.paid",
+            "step": "A6"
+          },
+          "text": "await_invoice_paid: Never ship before invoice.paid. On invoice.payment_failed, offer another attempt.",
+          "timeout": "30d",
+          "tool": {
+            "effect": "verify",
+            "name": "webhooks.listen",
+            "server": "stripe"
+          },
+          "tools": [
+            {
+              "effect": "verify",
+              "name": "webhooks.listen",
+              "server": "stripe"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.approve_large_order",
+          "branches": [
+            {
+              "then": "A.fulfil_order",
+              "when": {
+                "args": [
+                  "approval.granted",
+                  true
+                ],
+                "op": "eq"
+              }
+            },
+            {
+              "otherwise": true,
+              "then": "A.T_cancelled_unpaid"
+            }
+          ],
+          "dedupe": "never",
+          "inputs": [
+            {
+              "currency": "USD",
+              "path": "invoice.total_minor",
+              "type": "integer",
+              "unit": "cents"
+            }
+          ],
+          "kind": "human_gate",
+          "name": "approve_large_order",
+          "obligation": {
+            "reason": "finance policy FP-7",
+            "required": true
+          },
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "approval.granted",
+              "type": "boolean"
+            }
+          ],
+          "policy": {
+            "max_amount": {
+              "amount": 10000,
+              "currency": "USD"
+            },
+            "requires_human_approval": true,
+            "source": "LINT-02: compiled from prose"
+          },
+          "pre": {
+            "args": [
+              "invoice.total_minor",
+              1000000
+            ],
+            "op": "gte"
+          },
+          "role": "ops_manager",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A7. Approval for large orders",
+            "step": "A7"
+          },
+          "text": "approve_large_order: Orders of USD 10,000 or more need a manager's approval before shipping. Company policy, not negotiable.",
+          "tool": {
+            "effect": "side_effect",
+            "name": "approvals.request",
+            "reversible": true,
+            "server": "northwind"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "approvals.request",
+              "reversible": true,
+              "server": "northwind"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.fulfil_order",
+          "branches": [
+            {
+              "then": "H3_report_fulfilled",
+              "when": {
+                "args": [
+                  "checkout.payment_choice",
+                  "pay_later"
+                ],
+                "op": "eq"
+              }
+            },
+            {
+              "otherwise": true,
+              "then": "A.T_fulfilled"
+            }
+          ],
+          "handoffs": [
+            "H3_report_fulfilled"
+          ],
+          "inputs": [
+            {
+              "path": "invoice.invoice_id",
+              "pattern": "in_[A-Za-z0-9]+",
+              "type": "string"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.shipping_address",
+              "sensitivity": "pii",
+              "type": "address"
+            },
+            {
+              "path": "approval.granted",
+              "type": "boolean"
+            }
+          ],
+          "kind": "action",
+          "name": "fulfil_order",
+          "org_id": "A",
+          "outputs": [
+            {
+              "path": "fulfilment_state",
+              "type": "enum",
+              "values": [
+                "pending",
+                "shipped",
+                "held"
+              ]
+            },
+            {
+              "path": "shipment_id",
+              "type": "string"
+            }
+          ],
+          "pre": {
+            "args": [
+              {
+                "args": [
+                  "invoice.status",
+                  "paid"
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      "invoice.total_minor",
+                      1000000
+                    ],
+                    "op": "lt"
+                  },
+                  {
+                    "args": [
+                      "approval.granted",
+                      true
+                    ],
+                    "op": "eq"
+                  }
+                ],
+                "op": "or"
+              }
+            ],
+            "op": "and"
+          },
+          "role": "ops_agent",
+          "source": {
+            "file": "mock/inputs/northwind/SKILL.md",
+            "heading": "A8. Fulfil the order",
+            "step": "A8"
+          },
+          "text": "fulfil_order: Create the shipment. If the order was financed, tell the partner the order is fulfilled so the loan activates.",
+          "tool": {
+            "effect": "side_effect",
+            "name": "create_shipment",
+            "requires_gate": "ops_manager if total_minor >= 1000000",
+            "reversible": "partial",
+            "server": "wms"
+          },
+          "tools": [
+            {
+              "effect": "side_effect",
+              "name": "create_shipment",
+              "requires_gate": "ops_manager if total_minor >= 1000000",
+              "reversible": "partial",
+              "server": "wms"
+            }
+          ],
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_out"
+        },
+        {
+          "_id": "A.T_fulfilled",
+          "kind": "terminal",
+          "name": "T_fulfilled",
+          "org_id": "A",
+          "outcome": "fulfilled",
+          "text": "T_fulfilled: terminal outcome fulfilled",
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "A.T_cancelled_unpaid",
+          "kind": "terminal",
+          "name": "T_cancelled_unpaid",
+          "org_id": "A",
+          "outcome": "cancelled_unpaid",
+          "text": "T_cancelled_unpaid: terminal outcome cancelled_unpaid",
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        }
+      ],
+      "org_id": "A",
+      "org_name": "northwind",
+      "outcomes": [
+        "fulfilled",
+        "paid_by_card_fallback",
+        "cancelled_unpaid",
+        "awaiting_approval"
+      ],
+      "policies": {
+        "data_residency": {
+          "negotiable": false,
+          "region": "US"
+        },
+        "financing_counts_as_paid": {
+          "negotiable": true,
+          "owner": "finance_controller",
+          "rule": {
+            "args": [
+              {
+                "args": [
+                  "plan_status",
+                  "authorized"
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  "plan_total",
+                  "invoice.total"
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "and"
+          }
+        },
+        "large_order_approval": {
+          "negotiable": false,
+          "requires": "ops_manager",
+          "rule": {
+            "args": [
+              "invoice.total_minor",
+              1000000
+            ],
+            "op": "gte"
+          }
+        },
+        "retention": {
+          "invoice_records": "7y"
+        },
+        "ship_only_when_paid": {
+          "negotiable": false,
+          "rule": {
+            "args": [
+              "invoice.status",
+              "paid"
+            ],
+            "op": "eq"
+          }
+        }
+      },
+      "procedure": "invoice-and-fulfil",
+      "roles": {
+        "finance_controller": {
+          "kind": "human",
+          "may": [
+            "define what counts as paid",
+            "approve out-of-band payment marking"
+          ]
+        },
+        "lender": {
+          "kind": "external_partner"
+        },
+        "ops_agent": {
+          "kind": "agent",
+          "may": [
+            "create customer",
+            "create and finalize invoice",
+            "request financing",
+            "start shipment"
+          ]
+        },
+        "ops_manager": {
+          "kind": "human",
+          "may": [
+            "approve orders >= USD 10000"
+          ]
+        },
+        "privacy_lead": {
+          "kind": "human",
+          "may": [
+            "approve data sharing rules"
+          ]
+        }
+      },
+      "tools": [
+        {
+          "effect": "side_effect",
+          "idempotent": true,
+          "ref": "stripe:customers.create",
+          "reversible": "partial"
+        },
+        {
+          "effect": "side_effect",
+          "ref": "stripe:invoices.create",
+          "reversible": true
+        },
+        {
+          "effect": "side_effect",
+          "limits": {
+            "max_items": 250
+          },
+          "ref": "stripe:invoiceitems.create",
+          "reversible": true
+        },
+        {
+          "effect": "side_effect",
+          "note": "amounts immutable afterwards",
+          "ref": "stripe:invoices.finalize",
+          "reversible": false
+        },
+        {
+          "effect": "side_effect",
+          "ref": "stripe:invoices.send",
+          "reversible": false
+        },
+        {
+          "effect": "side_effect",
+          "idempotent": true,
+          "money": true,
+          "ref": "stripe:invoices.pay",
+          "reversible": false
+        },
+        {
+          "effect": "verify",
+          "ref": "stripe:webhooks.listen",
+          "returns": [
+            "invoice.paid",
+            "invoice.payment_failed"
+          ]
+        },
+        {
+          "effect": "side_effect",
+          "human": true,
+          "ref": "northwind:approvals.request",
+          "reversible": true
+        },
+        {
+          "effect": "side_effect",
+          "ref": "wms:create_shipment",
+          "requires_gate": "ops_manager if total_minor >= 1000000",
+          "reversible": "partial"
+        }
+      ],
+      "transitions": [
+        {
+          "_id": "A.create_customer->A.create_invoice",
+          "from": "A.create_customer",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "to": "A.create_invoice",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.create_invoice->A.add_items",
+          "from": "A.create_invoice",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "to": "A.add_items",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.add_items->A.finalize_invoice",
+          "from": "A.add_items",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "pitfalls": "Stripe caps an invoice at 250 items.",
+          "to": "A.finalize_invoice",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.finalize_invoice->A.collect_payment",
+          "from": "A.finalize_invoice",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "pitfalls": "After this the amounts cannot change.",
+          "to": "A.collect_payment",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.collect_payment->A.await_invoice_paid",
+          "from": "A.collect_payment",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "to": "A.await_invoice_paid",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.await_invoice_paid->A.approve_large_order",
+          "condition": {
+            "args": [
+              "invoice.status",
+              "paid"
+            ],
+            "op": "eq"
+          },
+          "from": "A.await_invoice_paid",
+          "guidance": "invoice.status == 'paid'",
+          "org_id": "A",
+          "pitfalls": "Never ship before invoice.paid.",
+          "to": "A.approve_large_order",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.await_invoice_paid->A.collect_payment",
+          "condition": {
+            "args": [
+              "webhook.event",
+              "invoice.payment_failed"
+            ],
+            "op": "eq"
+          },
+          "from": "A.await_invoice_paid",
+          "guidance": "webhook.event == 'invoice.payment_failed'",
+          "org_id": "A",
+          "pitfalls": "Never ship before invoice.paid.",
+          "to": "A.collect_payment",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.await_invoice_paid->A.T_cancelled_unpaid",
+          "from": "A.await_invoice_paid",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "pitfalls": "Never ship before invoice.paid.",
+          "to": "A.T_cancelled_unpaid",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.approve_large_order->A.fulfil_order",
+          "condition": {
+            "args": [
+              "approval.granted",
+              true
+            ],
+            "op": "eq"
+          },
+          "from": "A.approve_large_order",
+          "guidance": "approval.granted == True",
+          "org_id": "A",
+          "to": "A.fulfil_order",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.approve_large_order->A.T_cancelled_unpaid",
+          "from": "A.approve_large_order",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "to": "A.T_cancelled_unpaid",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "A.fulfil_order->A.T_fulfilled",
+          "from": "A.fulfil_order",
+          "guidance": "otherwise",
+          "org_id": "A",
+          "to": "A.T_fulfilled",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        }
+      ],
+      "use_case_id": "bnpl_checkout_v1",
+      "version": "2.4.0"
+    },
+    {
+      "_id": "bnpl_checkout_v1:B",
+      "description": "Check eligibility for a BNPL loan on a merchant's basket, present terms, create the customer, initiate and authorize the loan, return the finalized payment plan, and activate the loan when the merchant reports fulfilment.\n",
+      "entities": {
+        "customer": {
+          "fields": {
+            "customerId": {
+              "may_cross": "never",
+              "sensitivity": "internal",
+              "type": "string"
+            },
+            "dateOfBirth": {
+              "may_cross": "never",
+              "sensitivity": "pii",
+              "type": "date"
+            },
+            "email": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            "firstName": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            "lastName": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            "postalCode": {
+              "may_cross": "ask",
+              "sensitivity": "pii",
+              "type": "string"
+            }
+          }
+        },
+        "loan": {
+          "fields": {
+            "finalizedPaymentPlan": {
+              "may_cross": "partial",
+              "sensitivity": "internal",
+              "type": "object"
+            },
+            "loanTransactionId": {
+              "may_cross": "ask",
+              "sensitivity": "internal",
+              "type": "string"
+            },
+            "redirectAuthToken": {
+              "may_cross": "never",
+              "sensitivity": "secret",
+              "type": "string"
+            },
+            "totalLoanAmount": {
+              "currency": "ISO-4217",
+              "type": "money",
+              "unit": "major"
+            }
+          }
+        },
+        "product": {
+          "fields": {
+            "productCode": {
+              "pattern": "[A-Z0-9-]{4,16}",
+              "type": "string"
+            },
+            "purchaseAmount": {
+              "currency": "ISO-4217",
+              "type": "money",
+              "unit": "major"
+            }
+          }
+        }
+      },
+      "evidence": {
+        "accepts_from_partner": {
+          "fulfilment": {
+            "requires_all": [
+              "loan_reference",
+              "fulfilled_at"
+            ]
+          }
+        },
+        "audit_log": "every decision with actor, time, inputs hash",
+        "produces": [
+          "eligibility_log",
+          "authorization_record",
+          "activation_record"
+        ]
+      },
+      "exceptions": [
+        {
+          "action": "hold transaction 24h, then expire; report declined to merchant",
+          "case": "customer_abandons_authentication"
+        },
+        {
+          "action": "reject activation; ask merchant to collect by other means",
+          "case": "fulfilment_reported_but_plan_not_authorized"
+        },
+        {
+          "action": "expire authorized plan after 14 days; notify merchant",
+          "case": "merchant_never_reports_fulfilment"
+        }
+      ],
+      "handoffs": [
+        {
+          "accept": {
+            "customer": {
+              "fields": [
+                "firstName",
+                "lastName",
+                "email",
+                "postalCode"
+              ],
+              "required": true
+            },
+            "products": {
+              "items": {
+                "productCode": "string",
+                "purchaseAmount": "money"
+              },
+              "required": true
+            }
+          },
+          "direction": "in",
+          "from_role": "merchant",
+          "id": "L1_receive_basket",
+          "never_accept": [
+            "card numbers",
+            "merchant customer ids",
+            "bank details"
+          ],
+          "purpose": "Receive the basket and customer details to run eligibility.",
+          "step": "checkLoanCanBeProvided"
+        },
+        {
+          "direction": "out",
+          "id": "L2_return_plan",
+          "never_send": [
+            "redirectAuthToken",
+            "customerId",
+            "risk band",
+            "dateOfBirth"
+          ],
+          "payload": {
+            "loan_reference": {
+              "from": "loanTransactionId",
+              "may_cross": "ask"
+            },
+            "plan_status": {
+              "from": "finalizedPaymentPlan.status"
+            },
+            "plan_total": {
+              "from": "totalLoanAmount"
+            }
+          },
+          "purpose": "Return the financing decision.",
+          "sla_expected": {
+            "24h if customer action pending": null,
+            "final": "2m for decision",
+            "negotiable": true
+          },
+          "step": "retrieveFinalizedPaymentPlan",
+          "to_role": "merchant"
+        },
+        {
+          "accept": {
+            "fulfilled_at": {
+              "required": true,
+              "type": "datetime"
+            },
+            "loan_reference": {
+              "maps_to": "loanTransactionId",
+              "required": true
+            }
+          },
+          "direction": "in",
+          "from_role": "merchant",
+          "id": "L3_receive_fulfilment",
+          "purpose": "Activate the loan once the merchant reports the order fulfilled.",
+          "returns": {
+            "ack": {
+              "values": [
+                "activated",
+                "rejected"
+              ]
+            }
+          },
+          "step": "updateOrderStatus"
+        }
+      ],
+      "hash": "sha256:ed861469a1e84463fb0beeef5d19b344a0a52491cfff46b4494ba202ce7d1171",
+      "merge_preferences": {
+        "always_ask": [
+          "anything touching money",
+          "pii",
+          "loan identifiers"
+        ],
+        "auto_countersign": {
+          "allowed_for": [],
+          "max_per_week": 0
+        },
+        "auto_resolve": [
+          "field_rename",
+          "unit_conversion_on_partner_side"
+        ],
+        "dedupe_allowed_for": [],
+        "default_owner_for_adapters": "partner",
+        "question_routing": {
+          "money": "risk_officer",
+          "operations": "platform.lead",
+          "pii": "dpo"
+        }
+      },
+      "nodes": [
+        {
+          "_id": "B.checkLoanCanBeProvided",
+          "dedupe": "never",
+          "inputs": [
+            {
+              "may_cross": "ask",
+              "path": "customer.firstName",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.lastName",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "never",
+              "path": "customer.dateOfBirth",
+              "sensitivity": "pii",
+              "type": "date"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.postalCode",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "path": "products.productCode",
+              "pattern": "[A-Z0-9-]{4,16}",
+              "type": "string"
+            },
+            {
+              "path": "products.purchaseAmount",
+              "type": "money",
+              "unit": "major"
+            }
+          ],
+          "kind": "action",
+          "name": "checkLoanCanBeProvided",
+          "obligation": {
+            "reason": "regulatory eligibility check",
+            "required": true
+          },
+          "org_id": "B",
+          "outputs": [
+            {
+              "path": "eligibilityCheckRequired",
+              "type": "boolean"
+            },
+            {
+              "path": "eligibleProducts",
+              "type": "array"
+            },
+            {
+              "path": "totalLoanAmount",
+              "type": "money",
+              "unit": "major"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "findEligibleProducts",
+            "step": 0,
+            "stepId": "checkLoanCanBeProvided"
+          },
+          "text": "checkLoanCanBeProvided: Call the BNPL API to filter the basket for products qualifying for checkout loans. Pass in the array of products from the workflow input as the payload for the API call. Act on the response payload: - If a list of qualifying products is returned then submit customer choices. - If the list of qualifying products is empty then end the workflow",
+          "tool": {
+            "effect": "verify",
+            "name": "findEligibleProducts",
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_in"
+        },
+        {
+          "_id": "B.getCustomerTermsAndConditions",
+          "confidential_notes": "Terms vary by risk band; bands are confidential.",
+          "dedupe": "never",
+          "inputs": [],
+          "kind": "action",
+          "name": "getCustomerTermsAndConditions",
+          "org_id": "B",
+          "outputs": [
+            {
+              "path": "termsAndConditions",
+              "type": "object"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "getTermsAndConditions",
+            "step": 1,
+            "stepId": "getCustomerTermsAndConditions"
+          },
+          "text": "getCustomerTermsAndConditions: Get the terms and conditions for the BNPL loans. This is static data and therefore has no arguments. The data will be displayed to the customer and they'll accept the terms out-of-band. After this step the flow will need to do a customer eligibility check if required.",
+          "tool": {
+            "effect": "pure",
+            "name": "getTermsAndConditions",
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "B.createCustomer",
+          "confidential_notes": "This is an eligibility record, not a billing record.",
+          "dedupe": "never",
+          "inputs": [
+            {
+              "may_cross": "ask",
+              "path": "customer.firstName",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.lastName",
+              "sensitivity": "pii",
+              "type": "string"
+            },
+            {
+              "may_cross": "never",
+              "path": "customer.dateOfBirth",
+              "sensitivity": "pii",
+              "type": "date"
+            },
+            {
+              "may_cross": "ask",
+              "path": "customer.postalCode",
+              "sensitivity": "pii",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "createCustomer",
+          "obligation": {
+            "reason": "KYC record",
+            "required": true
+          },
+          "org_id": "B",
+          "outputs": [
+            {
+              "path": "customer",
+              "type": "string"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "createCustomer",
+            "step": 2,
+            "stepId": "createCustomer"
+          },
+          "text": "createCustomer: Call the BNPL platform and verify the customer is eligible for the loan, which creates a customer resource. This step is skipped if the customer is already enrolled in the BNPL platform. Accepting the terms and conditions is set to true as the assumption is they have been accepted when this step is invoked. If the customer is eligible for the BNPL loan then a customer resource is created",
+          "tool": {
+            "effect": "side_effect",
+            "idempotent": true,
+            "name": "createCustomer",
+            "reversible": "partial",
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "B.initiateBnplTransaction",
+          "inputs": [
+            {
+              "path": "customer.uri",
+              "type": "string"
+            },
+            {
+              "path": "customer",
+              "source": "$steps.createCustomer.outputs.customer",
+              "type": "string"
+            },
+            {
+              "path": "eligibleProducts",
+              "source": "$steps.checkLoanCanBeProvided.outputs.eligibleProducts",
+              "type": "array"
+            }
+          ],
+          "kind": "action",
+          "name": "initiateBnplTransaction",
+          "org_id": "B",
+          "outputs": [
+            {
+              "may_cross": "never",
+              "path": "redirectAuthToken",
+              "sensitivity": "secret",
+              "type": "string"
+            },
+            {
+              "path": "loanTransactionResourceUrl",
+              "type": "string"
+            },
+            {
+              "derived": true,
+              "entity": "loan",
+              "may_cross": "ask",
+              "path": "loanTransactionId",
+              "sensitivity": "internal",
+              "source": "LINT-01: derived, not declared by the step",
+              "type": "string"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "createBnplTransaction",
+            "step": 3,
+            "stepId": "initiateBnplTransaction"
+          },
+          "text": "initiateBnplTransaction: Initiate the BNPL transaction by sending the customer identifier, eligible products, and indicative loan amount to initiate the loan process",
+          "tool": {
+            "effect": "side_effect",
+            "money": true,
+            "name": "createBnplTransaction",
+            "reversible": true,
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "B.authenticateCustomerAndAuthorizeLoan",
+          "confidential_notes": "Authentication vendor and challenge policy are confidential.",
+          "inputs": [
+            {
+              "corrected_from": "$steps.authenticateCustomerAndAuthorizeLoan.outputs.redirectAuthToken",
+              "may_cross": "never",
+              "path": "redirectAuthToken",
+              "sensitivity": "secret",
+              "source": "$steps.initiateBnplTransaction.outputs.redirectAuthToken",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "authenticateCustomerAndAuthorizeLoan",
+          "org_id": "B",
+          "outputs": [
+            {
+              "path": "redirectUrl",
+              "type": "string"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "getAuthorization",
+            "step": 4,
+            "stepId": "authenticateCustomerAndAuthorizeLoan"
+          },
+          "text": "authenticateCustomerAndAuthorizeLoan: Authenticate the customer and seek authorization for the loan. Notes: - Authenticate in this case does not necessarily mean with a valid set of credentials. It could be to prove the identity of the end user, possibly doing an UMA style interaction (which is too complex to tie into this example). - A redirect is returned for to be sent to the customer. The customer should follow this, but the success of the authorisation is out-of-band. - This flow mimics OAuth style authorization but is not an exact match as it does not rely on an authorisation code/access token exchange (as this seems somewhat artificial in this context).",
+          "tool": {
+            "effect": "side_effect",
+            "name": "getAuthorization",
+            "reversible": false,
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "B.retrieveFinalizedPaymentPlan",
+          "inputs": [
+            {
+              "may_cross": "ask",
+              "path": "loanTransactionId",
+              "sensitivity": "internal",
+              "source": "$steps.initiateBnplTransaction.outputs.loanTransactionId",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "retrieveFinalizedPaymentPlan",
+          "org_id": "B",
+          "outputs": [
+            {
+              "may_cross": "partial",
+              "path": "finalizedPaymentPlan",
+              "sensitivity": "internal",
+              "type": "object"
+            }
+          ],
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "retrieveBnplLoanTransaction",
+            "step": 5,
+            "stepId": "retrieveFinalizedPaymentPlan"
+          },
+          "text": "retrieveFinalizedPaymentPlan: Retrieve finalized payment plan to show to customer once authorization is complete",
+          "tool": {
+            "effect": "verify",
+            "name": "retrieveBnplLoanTransaction",
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_out"
+        },
+        {
+          "_id": "B.updateOrderStatus",
+          "inputs": [
+            {
+              "derived": true,
+              "may_cross": "ask",
+              "path": "loanTransactionId",
+              "sensitivity": "internal",
+              "source": "$steps.initiateBnplTransaction.outputs.loanTransactionId",
+              "type": "string"
+            }
+          ],
+          "kind": "action",
+          "name": "updateOrderStatus",
+          "org_id": "B",
+          "outcome": "loan_activated",
+          "outputs": [],
+          "pre": {
+            "args": [
+              "loanTransactionId"
+            ],
+            "op": "exists"
+          },
+          "role": "lending_agent",
+          "source": {
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "operationId": "updateBnplLoanTransactionStatus",
+            "step": 6,
+            "stepId": "updateOrderStatus"
+          },
+          "text": "updateOrderStatus: Send update from eCommerce platform to indicate order fulfilled and loan is therefore active",
+          "tool": {
+            "effect": "side_effect",
+            "money": true,
+            "name": "updateBnplLoanTransactionStatus",
+            "requires_gate": "risk_officer if totalLoanAmount >= 5000",
+            "reversible": false,
+            "server": "BnplApi"
+          },
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_in"
+        },
+        {
+          "_id": "B.END_not_eligible",
+          "kind": "terminal",
+          "name": "END_not_eligible",
+          "org_id": "B",
+          "outcome": "not_eligible",
+          "text": "END_not_eligible: terminal outcome not_eligible. The merchant must be allowed to see a decline.",
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "handoff_out"
+        },
+        {
+          "_id": "B.decide_eligibilityCheckRequired",
+          "inputs": [
+            {
+              "path": "eligibilityCheckRequired",
+              "type": "boolean"
+            }
+          ],
+          "kind": "decision",
+          "name": "decide_eligibilityCheckRequired",
+          "org_id": "B",
+          "outputs": [],
+          "role": "lending_agent",
+          "source": {
+            "derived_from": "onSuccess goto criteria",
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "step": 1,
+            "stepId": "getCustomerTermsAndConditions"
+          },
+          "text": "decide_eligibilityCheckRequired: branch on eligibilityCheckRequired after getCustomerTermsAndConditions: eligibilityCheckRequired / eligibilityCheckNotRequired",
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        },
+        {
+          "_id": "B.decide_redirectAuthToken",
+          "inputs": [
+            {
+              "may_cross": "never",
+              "path": "redirectAuthToken",
+              "sensitivity": "secret",
+              "type": "string"
+            }
+          ],
+          "kind": "decision",
+          "name": "decide_redirectAuthToken",
+          "org_id": "B",
+          "outputs": [],
+          "role": "lending_agent",
+          "source": {
+            "derived_from": "onSuccess goto criteria",
+            "file": "mock/inputs/lakeside/bnpl-arazzo.yaml",
+            "step": 3,
+            "stepId": "initiateBnplTransaction"
+          },
+          "text": "decide_redirectAuthToken: branch on redirectAuthToken after initiateBnplTransaction: CustomerAuthorizationRequired / CustomerAuthorizationNotRequired",
+          "use_case_id": "bnpl_checkout_v1",
+          "visibility": "internal"
+        }
+      ],
+      "org_id": "B",
+      "org_name": "lakeside",
+      "outcomes": [
+        "loan_activated",
+        "not_eligible",
+        "customer_abandoned",
+        "declined_at_authorization"
+      ],
+      "policies": {
+        "activate_only_on_fulfilment": {
+          "negotiable": false,
+          "rule": {
+            "args": [
+              "orderStatus",
+              "fulfilled"
+            ],
+            "op": "eq"
+          }
+        },
+        "data_residency": {
+          "negotiable": false,
+          "region": "US"
+        },
+        "decision_sla": {
+          "final": "2m",
+          "negotiable": true
+        },
+        "large_loan_approval": {
+          "negotiable": false,
+          "requires": "risk_officer",
+          "rule": {
+            "args": [
+              "totalLoanAmount",
+              5000
+            ],
+            "op": "gte"
+          }
+        },
+        "retention": {
+          "loan_records": "7y"
+        }
+      },
+      "procedure": "apply-for-loan-at-checkout",
+      "procedure_ref": "./bnpl-arazzo.yaml#/workflows/ApplyForLoanAtCheckout",
+      "roles": {
+        "dpo": {
+          "kind": "human",
+          "may": [
+            "approve data sharing rules"
+          ]
+        },
+        "lending_agent": {
+          "kind": "agent",
+          "may": [
+            "eligibility check",
+            "create customer",
+            "initiate transaction",
+            "retrieve plan",
+            "update order status"
+          ]
+        },
+        "merchant": {
+          "kind": "external_partner"
+        },
+        "risk_officer": {
+          "kind": "human",
+          "may": [
+            "approve loans above USD 5000",
+            "override eligibility rules"
+          ]
+        }
+      },
+      "tools": [
+        {
+          "effect": "verify",
+          "ref": "BnplApi.findEligibleProducts"
+        },
+        {
+          "effect": "pure",
+          "ref": "BnplApi.getTermsAndConditions"
+        },
+        {
+          "effect": "side_effect",
+          "idempotent": true,
+          "ref": "BnplApi.createCustomer",
+          "reversible": "partial"
+        },
+        {
+          "effect": "side_effect",
+          "money": true,
+          "ref": "BnplApi.createBnplTransaction",
+          "reversible": true
+        },
+        {
+          "effect": "side_effect",
+          "ref": "BnplApi.getAuthorization",
+          "reversible": false
+        },
+        {
+          "effect": "verify",
+          "ref": "BnplApi.retrieveBnplLoanTransaction"
+        },
+        {
+          "effect": "side_effect",
+          "money": true,
+          "ref": "BnplApi.updateBnplLoanTransaction",
+          "requires_gate": "risk_officer if totalLoanAmount >= 5000",
+          "reversible": false
+        }
+      ],
+      "transitions": [
+        {
+          "_id": "B.checkLoanCanBeProvided->B.getCustomerTermsAndConditions",
+          "condition": {
+            "args": [
+              "response.body.products.count",
+              0
+            ],
+            "op": "gt"
+          },
+          "from": "B.checkLoanCanBeProvided",
+          "guidance": "qualifyingProductsFound",
+          "org_id": "B",
+          "to": "B.getCustomerTermsAndConditions",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.checkLoanCanBeProvided->B.END_not_eligible",
+          "condition": {
+            "args": [
+              {
+                "args": [
+                  "response.body.existingCustomerNotEligible",
+                  false
+                ],
+                "op": "eq"
+              },
+              {
+                "args": [
+                  "response.body.products.count",
+                  0
+                ],
+                "op": "eq"
+              }
+            ],
+            "op": "or"
+          },
+          "from": "B.checkLoanCanBeProvided",
+          "guidance": "existingCustomerNotEligible | qualifyingProductsNotFound",
+          "org_id": "B",
+          "to": "B.END_not_eligible",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.getCustomerTermsAndConditions->B.decide_eligibilityCheckRequired",
+          "from": "B.getCustomerTermsAndConditions",
+          "guidance": "on success",
+          "org_id": "B",
+          "to": "B.decide_eligibilityCheckRequired",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.decide_eligibilityCheckRequired->B.createCustomer",
+          "condition": {
+            "args": [
+              "eligibilityCheckRequired",
+              true
+            ],
+            "op": "eq"
+          },
+          "from": "B.decide_eligibilityCheckRequired",
+          "guidance": "eligibilityCheckRequired",
+          "org_id": "B",
+          "to": "B.createCustomer",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.decide_eligibilityCheckRequired->B.initiateBnplTransaction",
+          "condition": {
+            "args": [
+              "eligibilityCheckRequired",
+              false
+            ],
+            "op": "eq"
+          },
+          "from": "B.decide_eligibilityCheckRequired",
+          "guidance": "eligibilityCheckNotRequired",
+          "org_id": "B",
+          "to": "B.initiateBnplTransaction",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.createCustomer->B.initiateBnplTransaction",
+          "condition": {
+            "args": [
+              "response.statusCode",
+              201
+            ],
+            "op": "eq"
+          },
+          "from": "B.createCustomer",
+          "guidance": "customerIsEligible",
+          "org_id": "B",
+          "to": "B.initiateBnplTransaction",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.createCustomer->B.END_not_eligible",
+          "condition": {
+            "args": [
+              "response.statusCode",
+              200
+            ],
+            "op": "eq"
+          },
+          "from": "B.createCustomer",
+          "guidance": "customerIsNotEligible",
+          "org_id": "B",
+          "to": "B.END_not_eligible",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.initiateBnplTransaction->B.decide_redirectAuthToken",
+          "from": "B.initiateBnplTransaction",
+          "guidance": "on success",
+          "org_id": "B",
+          "to": "B.decide_redirectAuthToken",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.decide_redirectAuthToken->B.authenticateCustomerAndAuthorizeLoan",
+          "condition": {
+            "args": [
+              "response.body.redirectAuthToken",
+              null
+            ],
+            "op": "ne"
+          },
+          "from": "B.decide_redirectAuthToken",
+          "guidance": "CustomerAuthorizationRequired",
+          "org_id": "B",
+          "to": "B.authenticateCustomerAndAuthorizeLoan",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.decide_redirectAuthToken->B.retrieveFinalizedPaymentPlan",
+          "condition": {
+            "args": [
+              "response.body.redirectAuthToken",
+              null
+            ],
+            "op": "eq"
+          },
+          "from": "B.decide_redirectAuthToken",
+          "guidance": "CustomerAuthorizationNotRequired",
+          "org_id": "B",
+          "to": "B.retrieveFinalizedPaymentPlan",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.authenticateCustomerAndAuthorizeLoan->B.retrieveFinalizedPaymentPlan",
+          "from": "B.authenticateCustomerAndAuthorizeLoan",
+          "guidance": "next step (sequential)",
+          "org_id": "B",
+          "to": "B.retrieveFinalizedPaymentPlan",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        },
+        {
+          "_id": "B.retrieveFinalizedPaymentPlan->B.updateOrderStatus",
+          "from": "B.retrieveFinalizedPaymentPlan",
+          "guidance": "next step (sequential)",
+          "org_id": "B",
+          "to": "B.updateOrderStatus",
+          "type": "normal",
+          "use_case_id": "bnpl_checkout_v1"
+        }
+      ],
+      "use_case_id": "bnpl_checkout_v1",
+      "version": "1.0.0",
+      "workflow_id": "ApplyForLoanAtCheckout"
+    }
+  ]
+}
