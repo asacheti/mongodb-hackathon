@@ -376,6 +376,7 @@ class Agent:
                "status": "rejected" if rej else "accepted", "handoff": handoff, "ts": now()}
         db.col("handoffs").insert_one(rec)
         if rej:
+            rej["_id"] = f"{self.use_case}:{run_id}:{pmp['seq']}:{edge_id}:{self.org}"
             db.col("rejections").insert_one(rej)
             db.col("contracts").update_one({"_id": self.contract["_id"], "status": "active"}, {"$set": {"status": "suspect", "suspect_reason": rej["code"]}})
             run["handoffs"].append({"edge": edge_id, "seq": pmp["seq"], "direction": "received", "status": "rejected", "rejection": rej})

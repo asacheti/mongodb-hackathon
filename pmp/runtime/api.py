@@ -43,7 +43,7 @@ def aggregate(use_case: str, urls: dict[str, str]) -> dict:
                       for q in db.col("merge_questions").find({"use_case_id": use_case}).sort("_id", 1)],
         "findings": [{k: f.get(k) for k in ("check", "verdict", "scope", "stakes", "owner_org", "stage", "resolved_by")}
                      for f in db.col("findings").find({"use_case_id": use_case, "stage": {"$in": ["validate", "revalidate"]}})],
-        "rejections": list(db.col("rejections").find({"use_case_id": use_case})),
+        "rejections": [{**r, "_id": str(r.get("_id"))} for r in db.col("rejections").find({"use_case_id": use_case})],
         "handoffs": [{k: h.get(k) for k in ("run", "seq", "edge", "sender", "receiver", "status", "ts")}
                      for h in db.col("handoffs").find({"use_case_id": use_case, "role": "sender"}).sort([("run", 1), ("seq", 1)])],
         "merge_log": [{k: e.get(k) for k in ("_id", "type", "rule", "status", "contract_version", "ts")}

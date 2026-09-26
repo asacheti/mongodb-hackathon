@@ -173,7 +173,10 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="PMP mediator: patch contracts from runtime rejections.")
     p.add_argument("--use-case", default=DEFAULT_USE_CASE)
     a = p.parse_args(argv)
-    watch(a.use_case)
+    try:
+        watch(a.use_case)
+    except KeyboardInterrupt:
+        print("mediator: stopped")
     return 0
 
 
