@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from pmp import spec
-from pmp.predicate import fields_referenced, to_text
+from pmp.predicate import evaluate, fields_referenced, to_text
 
 DEFAULT_USE_CASE = "bnpl_checkout_v1"
 SENSITIVE = {"pii", "financial", "secret"}
@@ -39,6 +39,7 @@ class Ctx:
     alignments: list[dict]
     questions: list[dict] = field(default_factory=list)
     db: Any = None
+    stage: str = "validate"
 
     def __post_init__(self):
         self.nodes = {n["_id"]: n for n in self.merged["nodes"]}
@@ -250,8 +251,10 @@ def _sets(n: dict, fld: str, value: Any) -> bool:
         return any(f == fld and v == value for f, v in post)
     if not any(f["path"] == fld for f in n.get("outputs", [])):
         return False
-    tool = n.get("tool") or {}
-    return tool.get("effect", "side_effect") != "verify" or n["kind"] == "human_gate"
+    tool = n.get("tool")
+    if not tool:                      # a tool-less step (pure transform, decision) only forwards fields
+        return n["kind"] == "human_gate"
+    return tool.get("effect", "side_effect") != "verify"
 
 
 def str_03(ctx: Ctx) -> list[dict]:
@@ -473,9 +476,175 @@ def tool_03(ctx: Ctx) -> list[dict]:
     return out or [result("TOOL-03", "pass", "merged", "no tool requires a gate")]
 
 
-REGISTRY: list[tuple[str, Callable[[Ctx], list[dict]]]] = [
-    ("IO-01", io_01), ("IO-02", io_02), ("STR-01", str_01), ("STR-03", str_03), ("PRE-01", pre_01),
-    ("POL-01", pol_01), ("FAIL-01", fail_01), ("DUP-02", dup_02), ("TOOL-01", tool_01), ("TOOL-02", tool_02), ("TOOL-03", tool_03),
+def str_02(ctx: Ctx) -> list[dict]:
+    """Every node is reachable from a start node (a node with no incoming edge)."""
+    starts = [nid for nid in ctx.nodes if not ctx.inc[nid]]
+    seen: set[str] = set(starts)
+    for st in starts:
+        seen |= ctx.downstream(st)
+    orphans = sorted(set(ctx.nodes) - seen)
+    if orphans:
+        return [result("STR-02", "fail", nid, f"{nid} is unreachable from any start node", rung=5, stakes="high",
+                       owner=ctx.node(nid)["org_id"]) for nid in orphans]
+    return [result("STR-02", "pass", "merged", f"all {len(ctx.nodes)} nodes reachable from {', '.join(starts)}")]
+
+
+def _gate_outputs(ctx: Ctx, nid: str) -> set[str]:
+    return {f["path"] for g in ctx.gates_before(nid) for f in g.get("outputs", [])}
+
+
+def _clauses(pred: dict | None) -> list[dict]:
+    if not pred:
+        return []
+    return list(pred["args"]) if pred["op"] == "and" else [pred]
+
+
+def guard_predicate(ctx: Ctx, e: dict) -> dict | None:
+    """The runtime guard on a boundary edge: an explicit predicate (from an answer), or, for a policy guard
+    (lattice), the sender's own precondition clause that depends on a human gate's output."""
+    g = e.get("guard") or {}
+    if g.get("predicate"):
+        return g["predicate"]
+    if g.get("requires_human_approval") or g.get("max_amount"):
+        S = ctx.node(e["from"])
+        gate_out = _gate_outputs(ctx, S["_id"])
+        for c in _clauses(S.get("pre")):
+            if fields_referenced(c) & gate_out:
+                return c
+    return None
+
+
+def pre_03(ctx: Ctx) -> list[dict]:
+    """Certificate-time: a boundary edge whose receiver needs more than the sender's postcondition promises is
+    `guarded` by a runtime predicate; without a guard it simply passes."""
+    out = []
+    for e in ctx.boundary:
+        gp = guard_predicate(ctx, e)
+        if not gp:
+            out.append(result("PRE-03", "pass", e["_id"], "no runtime guard needed on this edge"))
+            continue
+        S = ctx.node(e["from"])
+        human = bool(fields_referenced(gp) & _gate_outputs(ctx, S["_id"]))
+        post = to_text(S.get("post")) if S.get("post") else "only statusCode == 200"
+        detail = (f"guard {to_text(gp)}; the flag is set by a human gate at runtime" if human
+                  else f"sender postcondition is {post}; guard {to_text(gp)}")
+        out.append(result("PRE-03", "guarded", e["_id"], detail, rung=1, stakes="low", stakes_reason="runtime guard, checked by the sender before every handoff",
+                          owner=S["org_id"], guard_predicate=gp))
+    return out
+
+
+def _confirmation(ctx: Ctx, al: dict) -> str | None:
+    if al.get("confirmed_by"):
+        return al["confirmed_by"]
+    edges = {e["_id"]: e for e in ctx.boundary}
+    for q in ctx.questions:
+        for g in q.get("guardrails", []):
+            if g.get("edge") and edges.get(g["edge"], {}).get("alignment") == al["_id"]:
+                return q["_id"]
+            if g.get("type") == "compensation_edge" and any(fc["alignment"] == al["_id"] and fc["from"] == g.get("from")
+                                                            for fc in ctx.merged.get("failure_candidates", [])):
+                return q["_id"]
+            if g.get("type") == "alignment_decision" and g.get("value") == al["_id"]:
+                return q["_id"]
+    return None
+
+
+def aln_01(ctx: Ctx) -> list[dict]:
+    """Certificate-time, mediator-only: every alignment the merge used has a confirmation source."""
+    used = set(ctx.merged.get("alignments_used", []))
+    missing = [al for al in ctx.alignments if al["_id"] in used and not _confirmation(ctx, al)]
+    if missing:
+        return [result("ALN-01", "fail", f"{al.get('a_name', al['a'])} ~ {al.get('b_name', al['b'])}",
+                       "alignment used by the merge has no confirmation source", rung=5, stakes="high", owner="A",
+                       locality="mediator") for al in missing]
+    return [result("ALN-01", "pass", "merged", "every alignment used has a confirmation source; "
+                   + ", ".join(f"{al.get('a_name', al['a'])}~{al.get('b_name', al['b'])} by {_confirmation(ctx, al)}"
+                               for al in ctx.alignments if al["_id"] in used), locality="mediator")]
+
+
+def _sample(f: dict, k: int) -> Any:
+    t = f.get("type", "string")
+    leaf = _leaf(f["path"])
+    if t == "money":
+        return {"currency": f.get("currency", "USD"), "amount": round(2780.0 * k, 2)}
+    if t == "integer":
+        return 100 * k
+    if t == "number":
+        return 27.8 * k
+    if t == "boolean":
+        return True
+    if t == "enum" and f.get("values"):
+        return f["values"][0]
+    if t in ("datetime", "date"):
+        return "2026-09-26T09:12:03Z"
+    if t == "object":
+        return {}
+    if t == "array":
+        return []
+    return f"{leaf}_{k}"
+
+
+def _put(ctx_: dict, path: str, value: Any) -> None:
+    cur = ctx_
+    parts = path.split(".")
+    for p in parts[:-1]:
+        cur = cur.setdefault(p, {})
+        if not isinstance(cur, dict):
+            return
+    cur[parts[-1]] = value
+
+
+def effective_allowlist(e: dict) -> list[str]:
+    """What may cross: every non-sensitive sender field plus the allowlisted sensitive ones, minus never_send."""
+    never = [n.rstrip("*").rstrip(".") for n in ((e.get("handoff_out") or {}).get("never_send") or [])]
+    ok = [f["path"] for f in e["sender_fields"] if not (f.get("sensitivity") in SENSITIVE or f.get("may_cross") in ("ask", "never"))]
+    ok += [a for a in (e.get("allowlist") or []) if a not in ok]
+    return sorted(p for p in ok if not any(p == n or p.startswith(n + ".") for n in never if n))
+
+
+def conf_01(ctx: Ctx) -> list[dict]:
+    """Certificate-time: generate 4 payloads per boundary edge from its interface and dry-run the receiver's
+    precondition and the edge guard on them."""
+    out = []
+    for e in ctx.boundary:
+        S, R = ctx.node(e["from"]), ctx.node(e["to"])
+        fields = {f["path"]: f for f in e["sender_fields"]}
+        allowed = effective_allowlist(e)
+        gp = guard_predicate(ctx, e)
+        preds = [p for p in (R.get("pre"), gp) if p]
+        rejected = []
+        for k in range(1, 5):
+            payload: dict = {}
+            for path in allowed:
+                _put(payload, path, _sample(fields.get(path) or next((f for f in fields.values() if _leaf(f["path"]) == _leaf(path)), {"path": path}), k))
+            world = dict(payload)
+            for p in preds:
+                for fld in fields_referenced(p):
+                    if fld not in world and not any(fld.startswith(a + ".") or a.startswith(fld + ".") for a in allowed):
+                        _put(world, fld, _sample(fields.get(fld, {"path": fld, "type": "integer" if fld.endswith("_minor") else "string"}), k))
+                for fld, val in _eq_atoms(p):
+                    if isinstance(val, str) and "." in val:      # field == other field: make them equal
+                        _put(world, val, 2780.0 * k)
+                        _put(world, fld, 2780.0 * k)
+                    else:
+                        _put(world, fld, val)
+            if not all(evaluate(p, world) for p in preds):
+                rejected.append(k)
+        if rejected:
+            out.append(result("CONF-01", "fail", e["_id"], f"generated payloads {rejected} rejected by {R['name']} in dry run",
+                              rung=5, stakes="high", owner=S["org_id"]))
+        else:
+            out.append(result("CONF-01", "pass", e["_id"], f"4 generated payloads accepted in dry run ({len(allowed)} fields: {', '.join(allowed)})"))
+    return out
+
+
+ALL = {"validate", "revalidate"}
+CERT = {"revalidate"}
+REGISTRY: list[tuple[str, Callable[[Ctx], list[dict]], set[str]]] = [
+    ("IO-01", io_01, ALL), ("IO-02", io_02, ALL), ("STR-01", str_01, ALL), ("STR-02", str_02, ALL), ("STR-03", str_03, ALL),
+    ("PRE-01", pre_01, ALL), ("PRE-03", pre_03, CERT), ("POL-01", pol_01, ALL), ("FAIL-01", fail_01, ALL),
+    ("DUP-02", dup_02, ALL), ("TOOL-01", tool_01, ALL), ("TOOL-02", tool_02, ALL), ("TOOL-03", tool_03, ALL),
+    ("ALN-01", aln_01, CERT), ("CONF-01", conf_01, CERT),
 ]
 
 
@@ -487,10 +656,12 @@ def _slug(s: str) -> str:
 
 def run(merged: dict, submissions: list[dict], alignments: list[dict], questions: list[dict] | None = None,
         db: Any = None, stage: str = "validate") -> list[dict]:
-    ctx = Ctx(merged, {s["org_id"]: s for s in submissions}, alignments, questions or [], db)
+    ctx = Ctx(merged, {s["org_id"]: s for s in submissions}, alignments, questions or [], db, stage)
     use_case, version = merged["use_case_id"], merged["version"]
     results = []
-    for check, fn in REGISTRY:
+    for check, fn, stages in REGISTRY:
+        if stage not in stages:
+            continue
         for r in fn(ctx):
             assert r["check"] == check
             doc = {"_id": f"{use_case}:{stage}:v{version}:{check}:{_slug(r['scope'])}", "use_case_id": use_case,

@@ -70,7 +70,9 @@ def test_passing_checks_are_in_results_but_not_findings(world):
     assert by["IO-01"] == ["fail", "pass", "pass"]         # h1 fails; h2, h3 pass
     assert by["IO-02"] == ["fail", "pass", "pass"]
     assert by["PRE-01"] == ["pass", "pass", "fail"]        # only h3
-    assert [r["check"] for r in results] == sorted([r["check"] for r in results], key=[c for c, _ in v.REGISTRY].index)
+    assert [r["check"] for r in results] == sorted([r["check"] for r in results], key=[c for c, *_ in v.REGISTRY].index)
+    assert by["STR-02"] == ["pass"]
+    assert "PRE-03" not in by and "ALN-01" not in by and "CONF-01" not in by      # certificate-time only
 
 
 def test_stakes_rule(world):
