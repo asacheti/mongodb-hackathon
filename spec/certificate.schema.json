@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "certificate.schema.json",
+  "type": "object",
+  "required": ["certificate_id", "use_case_id", "contract_id", "contract_version", "inputs", "checks", "issued_at"],
+  "properties": {
+    "certificate_id": { "type": "string" },
+    "use_case_id": { "type": "string" },
+    "contract_id": { "type": "string" },
+    "contract_version": { "type": "integer" },
+    "inputs": { "type": "object", "required": ["h_A", "h_B", "h_merge"], "additionalProperties": { "type": "string" } },
+    "checks": { "type": "array", "items": { "type": "object", "required": ["check", "scope", "verdict", "locality"], "properties": { "check": { "type": "string" }, "scope": { "type": "string" }, "verdict": { "enum": ["pass", "guarded"] }, "locality": { "enum": ["local", "mediator"] }, "evidence": { "type": "string" } } } },
+    "alignments": { "type": "array" },
+    "decisions": { "type": "array" },
+    "questions": { "type": "array" },
+    "issued_at": { "type": "string" },
+    "signatures": { "type": "object" }
+  }
+}

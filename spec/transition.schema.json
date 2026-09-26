@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "transition.schema.json",
+  "type": "object",
+  "required": ["_id", "org_id", "use_case_id", "from", "to"],
+  "properties": {
+    "_id": { "type": "string" },
+    "org_id": { "enum": ["A", "B", "M"] },
+    "use_case_id": { "type": "string" },
+    "from": { "type": "string" },
+    "to": { "type": "string" },
+    "type": { "enum": ["normal", "boundary", "failure", "compensation", "relate"], "default": "normal" },
+    "condition": { "$ref": "predicate.schema.json" },
+    "guidance": { "type": "string" },
+    "pitfalls": { "type": "string" },
+    "origin": { "type": "string" }
+  }
+}

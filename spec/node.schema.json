@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "node.schema.json",
+  "title": "Procedure node",
+  "type": "object",
+  "required": ["_id", "org_id", "use_case_id", "name", "kind", "visibility", "text"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^[AB]\\.[A-Za-z0-9_]+$" },
+    "org_id": { "enum": ["A", "B"] },
+    "use_case_id": { "type": "string" },
+    "name": { "type": "string" },
+    "kind": { "enum": ["action", "decision", "human_gate", "handoff", "wait", "terminal"] },
+    "visibility": { "enum": ["internal", "handoff_out", "handoff_in"] },
+    "role": { "type": "string" },
+    "origin": { "type": "string", "description": "decision or question id that created this node; absent for submitted nodes" },
+    "tool": {
+      "type": "object",
+      "required": ["server", "name", "effect"],
+      "properties": {
+        "server": { "type": "string" },
+        "name": { "type": "string" },
+        "effect": { "enum": ["pure", "verify", "side_effect"] },
+        "reversible": { "enum": ["true", "false", "partial", true, false] },
+        "idempotent": { "type": "boolean" },
+        "money": { "type": "boolean" },
+        "requires_gate": { "type": "string" }
+      }
+    },
+    "inputs": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+    "outputs": { "type": "array", "items": { "$ref": "#/$defs/field" } },
+    "pre": { "$ref": "predicate.schema.json" },
+    "post": { "$ref": "predicate.schema.json" },
+    "branches": { "type": "array", "items": { "type": "object", "required": ["then"], "properties": { "when": { "$ref": "predicate.schema.json" }, "otherwise": { "type": "boolean" }, "then": { "type": "string" } } } },
+    "policy": { "type": "object" },
+    "obligation": { "type": "object", "properties": { "required": { "type": "boolean" }, "reason": { "type": "string" } } },
+    "dedupe": { "enum": ["never", "allowed"] },
+    "outcome": { "type": "string" },
+    "timeout": { "type": "string" },
+    "on_failure": { "type": "object" },
+    "text": { "type": "string", "description": "prose used for embedding; must not contain confidential_notes" },
+    "confidential_notes": { "type": "string" }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": ["path", "type"],
+      "properties": {
+        "path": { "type": "string" },
+        "type": { "enum": ["string", "integer", "number", "boolean", "date", "datetime", "money", "address", "object", "array", "enum"] },
+        "unit": { "enum": ["cents", "major"] },
+        "currency": { "type": "string" },
+        "values": { "type": "array" },
+        "pattern": { "type": "string" },
+        "sensitivity": { "enum": ["none", "internal", "pii", "financial", "secret"] },
+        "may_cross": { "enum": ["yes", "ask", "never", "token_only", "partial"] }
+      }
+    }
+  }
+}

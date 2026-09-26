@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "predicate.schema.json",
+  "title": "Predicate AST",
+  "type": "object",
+  "required": ["op", "args"],
+  "properties": {
+    "op": { "enum": ["and", "or", "not", "eq", "ne", "lt", "lte", "gt", "gte", "in", "exists"] },
+    "args": { "type": "array", "items": { "anyOf": [ { "$ref": "#" }, { "type": "string" }, { "type": "number" }, { "type": "boolean" }, { "type": "array" }, { "type": "null" } ] } }
+  },
+  "additionalProperties": false
+}

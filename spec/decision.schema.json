@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "decision.schema.json",
+  "title": "Low-stakes agent decision, stored in merge_log",
+  "type": "object",
+  "required": ["_id", "use_case_id", "type", "finding", "rule", "patch", "ts"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^d[0-9]+$" },
+    "use_case_id": { "type": "string" },
+    "type": { "const": "decision" },
+    "finding": { "type": "string" },
+    "rule": { "enum": ["lattice", "adapter", "extend_from_own_tools", "field_rename", "relate", "unit_conversion"] },
+    "signals": { "type": "object" },
+    "patch": { "type": "array", "items": { "type": "object", "required": ["op"], "properties": { "op": { "enum": ["insert_node", "extend_outputs", "add_edge", "set_policy", "set_alignment"] } } } },
+    "ts": { "type": "string" }
+  }
+}

@@ -1,0 +1,184 @@
+# Lakeside BNPL: merge profile sidecar.
+# The procedure itself is the OpenAPI Initiative's Arazzo 1.0.0 example
+# (examples/1.0.0/bnpl-arazzo.yaml), used verbatim in ./bnpl-arazzo.yaml.
+# Arazzo describes steps and data flow; it has no roles, sensitivity,
+# policies, handoffs or merge preferences. This file adds them.
+
+# 1. Frontmatter
+procedure_ref: ./bnpl-arazzo.yaml#/workflows/ApplyForLoanAtCheckout
+name: apply-for-loan-at-checkout
+description: >
+  Check eligibility for a BNPL loan on a merchant's basket, present terms,
+  create the customer, initiate and authorize the loan, return the finalized
+  payment plan, and activate the loan when the merchant reports fulfilment.
+org_id: lakeside
+use_case_id: bnpl_checkout_v1
+procedure_version: 1.0.0
+owner: { team: lending-platform, contact: platform.lead@lakeside.example }
+approvers: [platform.lead, risk.officer, dpo]
+partner_roles: [merchant]
+standards: [ISO-4217, arazzo-1.0.0]
+confidentiality: internal
+jurisdictions: [US]
+
+# 2. Purpose and scope
+trigger: merchant asks whether a customer's basket can be financed
+outcomes: [loan_activated, not_eligible, customer_abandoned, declined_at_authorization]
+out_of_scope: [repayment collection, disputes, refunds]
+success_measure: decision returned within 2 minutes; activation within 1h of fulfilment
+
+# 3. Roles
+roles:
+  lending_agent: { kind: agent, may: [eligibility check, create customer, initiate transaction, retrieve plan, update order status] }
+  risk_officer:  { kind: human, may: [approve loans above USD 5000, override eligibility rules] }
+  dpo:           { kind: human, may: [approve data sharing rules] }
+  merchant:      { kind: external_partner }
+
+# 4. Glossary and code lists
+terms:
+  productCode: "Lakeside's own catalog code for a financeable product. Not the merchant's SKU."
+  purchaseAmount: "Money in major units with an ISO-4217 currency, e.g. { currency: USD, amount: 2780.00 }."
+  loanTransactionId: "Lakeside's ID for the loan; needed to activate it later."
+  eligibilityCheckRequired: "Whether the customer must be checked before terms are shown."
+code_lists:
+  plan_status:
+    authorized: "Customer authenticated and accepted terms; loan will activate on fulfilment."
+    declined:   "Not eligible, or authorization failed."
+    pending_customer_action: "Customer must complete authentication."
+
+# 5. Data model
+entities:
+  product:
+    fields:
+      productCode:    { type: string, pattern: "[A-Z0-9-]{4,16}" }
+      purchaseAmount: { type: money, currency: ISO-4217, unit: major }
+  customer:
+    fields:
+      firstName:      { type: string, sensitivity: pii, may_cross: ask }
+      lastName:       { type: string, sensitivity: pii, may_cross: ask }
+      email:          { type: string, sensitivity: pii, may_cross: ask }
+      dateOfBirth:    { type: date,   sensitivity: pii, may_cross: never }   # collected by Lakeside directly
+      postalCode:     { type: string, sensitivity: pii, may_cross: ask }
+      customerId:     { type: string, sensitivity: internal, may_cross: never }
+  loan:
+    fields:
+      loanTransactionId:  { type: string, sensitivity: internal, may_cross: ask }
+      totalLoanAmount:    { type: money, currency: ISO-4217, unit: major }
+      redirectAuthToken:  { type: string, sensitivity: secret, may_cross: never }
+      finalizedPaymentPlan: { type: object, sensitivity: internal, may_cross: partial }
+
+# 6. Tools
+tools:
+  BnplApi.findEligibleProducts:         { effect: verify }
+  BnplApi.getTermsAndConditions:        { effect: pure }
+  BnplApi.createCustomer:               { effect: side_effect, reversible: partial, idempotent: true }
+  BnplApi.createBnplTransaction:        { effect: side_effect, reversible: true, money: true }
+  BnplApi.getAuthorization:             { effect: side_effect, reversible: false }
+  BnplApi.retrieveBnplLoanTransaction:  { effect: verify }
+  BnplApi.updateBnplLoanTransaction:    { effect: side_effect, reversible: false, money: true, requires_gate: "risk_officer if totalLoanAmount >= 5000" }
+
+# 7. Steps: taken verbatim from the Arazzo workflow. Only the fields Arazzo lacks are added here.
+step_annotations:
+  checkLoanCanBeProvided:     { visibility: handoff_in, role: lending_agent, obligation: { required: true, reason: "regulatory eligibility check" }, dedupe: never }
+  getCustomerTermsAndConditions: { visibility: internal, role: lending_agent, dedupe: never, confidential_notes: "Terms vary by risk band; bands are confidential." }
+  createCustomer:             { visibility: internal, role: lending_agent, obligation: { required: true, reason: "KYC record" }, dedupe: never, confidential_notes: "This is an eligibility record, not a billing record." }
+  initiateBnplTransaction:    { visibility: internal, role: lending_agent }
+  authenticateCustomerAndAuthorizeLoan: { visibility: internal, role: lending_agent, confidential_notes: "Authentication vendor and challenge policy are confidential." }
+  retrieveFinalizedPaymentPlan: { visibility: handoff_out, role: lending_agent }
+  updateOrderStatus:          { visibility: handoff_in, role: lending_agent, preconditions: { exists: loanTransactionId } }
+terminals:
+  END_not_eligible: { visibility: handoff_out, outcome: not_eligible, note: "The merchant must be allowed to see a decline." }
+
+# 8. Handoffs
+handoffs:
+  - id: L1_receive_basket
+    step: checkLoanCanBeProvided
+    direction: in
+    from_role: merchant
+    purpose: "Receive the basket and customer details to run eligibility."
+    accept:
+      products:   { required: true, items: { productCode: string, purchaseAmount: money } }
+      customer:   { required: true, fields: [firstName, lastName, email, postalCode] }
+    never_accept: [card numbers, merchant customer ids, bank details]
+  - id: L2_return_plan
+    step: retrieveFinalizedPaymentPlan
+    direction: out
+    to_role: merchant
+    purpose: "Return the financing decision."
+    payload:
+      plan_status:   { from: finalizedPaymentPlan.status }
+      plan_total:    { from: totalLoanAmount }
+      loan_reference:{ from: loanTransactionId, may_cross: ask }
+    never_send: [redirectAuthToken, customerId, risk band, dateOfBirth]
+    sla_expected: { final: 2m for decision, 24h if customer action pending, negotiable: true }
+  - id: L3_receive_fulfilment
+    step: updateOrderStatus
+    direction: in
+    from_role: merchant
+    purpose: "Activate the loan once the merchant reports the order fulfilled."
+    accept:
+      loan_reference: { required: true, maps_to: loanTransactionId }
+      fulfilled_at:   { required: true, type: datetime }
+    returns: { ack: { values: [activated, rejected] } }
+
+# 9. Policies
+policies:
+  large_loan_approval: { rule: { gte: [totalLoanAmount, 5000] }, requires: risk_officer, negotiable: false }
+  activate_only_on_fulfilment: { rule: { eq: [orderStatus, fulfilled] }, negotiable: false }
+  decision_sla: { final: 2m, negotiable: true }
+  data_residency: { region: US, negotiable: false }
+  retention: { loan_records: 7y }
+
+# 10. Exceptions, failure and compensation
+exceptions:
+  - case: customer_abandons_authentication
+    action: hold transaction 24h, then expire; report declined to merchant
+  - case: fulfilment_reported_but_plan_not_authorized
+    action: reject activation; ask merchant to collect by other means
+  - case: merchant_never_reports_fulfilment
+    action: expire authorized plan after 14 days; notify merchant
+
+# 11. Timing
+timing:
+  eligibility_decision: 2m
+  authentication_window: 24h
+  activation_after_fulfilment: 1h
+  authorized_plan_expiry: 14d
+
+# 12. Evidence and audit
+evidence:
+  produces: [eligibility_log, authorization_record, activation_record]
+  accepts_from_partner:
+    fulfilment: { requires_all: [loan_reference, fulfilled_at] }
+  audit_log: every decision with actor, time, inputs hash
+
+# 13. Merge preferences
+merge_preferences:
+  auto_resolve: [field_rename, unit_conversion_on_partner_side]
+  always_ask: [anything touching money, pii, loan identifiers]
+  default_owner_for_adapters: partner       # merchants convert to Lakeside's schema
+  dedupe_allowed_for: []                    # regulated: never collapse our checks
+  question_routing:
+    pii: dpo
+    money: risk_officer
+    operations: platform.lead
+  auto_countersign: { allowed_for: [], max_per_week: 0 }   # a person always signs
+
+# 14. Test cases
+tests:
+  - name: eligible_authorized
+    input: { products: [{ productCode: "BNPL-01", purchaseAmount: { currency: USD, amount: 2780.00 } }] }
+    expect: { plan_status: authorized, plan_total: 2780.00 }
+  - name: not_eligible
+    input: { products: [{ productCode: "NOFIN-9", purchaseAmount: { currency: USD, amount: 120.00 } }] }
+    expect: { terminal: END_not_eligible, plan_status: declined }
+  - name: large_loan_gate
+    input: { products: [{ productCode: "BNPL-01", purchaseAmount: { currency: USD, amount: 12500.00 } }] }
+    expect: { gate: risk_officer }
+
+# 15. Change log
+changelog:
+  - version: 1.0.0
+    date: 2026-09-26
+    changes: ["first merge profile around the Arazzo 1.0.0 example"]
+    affects: [all]

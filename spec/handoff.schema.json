@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "handoff.schema.json",
+  "title": "A2A-shaped handoff task",
+  "type": "object",
+  "required": ["metadata", "payload"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["pmp"],
+      "properties": {
+        "pmp": {
+          "type": "object",
+          "required": ["contract_id", "contract_version", "certificate_id", "edge", "sender", "receiver", "run", "seq"],
+          "properties": {
+            "contract_id": { "type": "string" }, "contract_version": { "type": "integer" }, "certificate_id": { "type": "string" },
+            "edge": { "type": "string" }, "sender": { "type": "string" }, "receiver": { "type": "string" },
+            "run": { "type": "string" }, "seq": { "type": "integer" },
+            "attestations": { "type": "array" }, "guard_results": { "type": "object" }
+          }
+        }
+      }
+    },
+    "payload": { "type": "object" }
+  }
+}

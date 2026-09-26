@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "alignment.schema.json",
+  "type": "object",
+  "required": ["_id", "use_case_id", "a", "b", "sigma", "iota", "tau", "proposal", "confidence"],
+  "properties": {
+    "_id": { "type": "string" },
+    "use_case_id": { "type": "string" },
+    "a": { "type": "string" }, "b": { "type": "string" },
+    "sigma": { "type": "number", "minimum": 0, "maximum": 1 },
+    "iota": { "type": "string", "description": "compatible | partial | incompatible | missing:<field> | n/a" },
+    "tau": { "type": "string", "description": "<A effect>/<B effect>" },
+    "nu": { "type": "string" },
+    "proposal": { "enum": ["distinct", "provides_input", "relate", "on_failure", "merge"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rationale": { "type": "string" },
+    "confirmed_by": { "type": ["string", "null"], "description": "question id, decision id, or null" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "contract.schema.json",
+  "type": "object",
+  "required": ["_id", "use_case_id", "contract_id", "version", "status", "certificate_id", "h_A", "h_B", "h_merge", "issued_at"],
+  "properties": {
+    "_id": { "type": "string" },
+    "use_case_id": { "type": "string" },
+    "contract_id": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "active", "suspect", "superseded"] },
+    "certificate_id": { "type": "string" },
+    "h_A": { "type": "string" }, "h_B": { "type": "string" }, "h_merge": { "type": "string" },
+    "h_alignments": { "type": "string" }, "h_answers": { "type": "string" },
+    "h_projection_A": { "type": "string" }, "h_projection_B": { "type": "string" }, "h_boundary_interface": { "type": "string" },
+    "boundary_edges": { "type": "array", "items": { "type": "object", "required": ["id", "from", "to", "allowlist"], "properties": { "id": { "type": "string" }, "from": { "type": "string" }, "to": { "type": "string" }, "allowlist": { "type": "array" }, "schema": { "type": "object" }, "guard": { "$ref": "predicate.schema.json" }, "sla": { "type": "object" } } } },
+    "reason": { "type": "string", "description": "why this version exists (initial | rejection code)" },
+    "supersedes": { "type": ["integer", "null"] },
+    "issued_at": { "type": "string" },
+    "signatures": { "type": "object" }
+  }
+}

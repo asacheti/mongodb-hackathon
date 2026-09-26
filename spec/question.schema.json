@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "question.schema.json",
+  "type": "object",
+  "required": ["_id", "use_case_id", "trigger", "to_org", "to_role", "text", "default"],
+  "properties": {
+    "_id": { "type": "string", "pattern": "^q[0-9]+$" },
+    "use_case_id": { "type": "string" },
+    "trigger": { "type": "string" },
+    "to_org": { "enum": ["A", "B"] },
+    "to_role": { "type": "string" },
+    "text": { "type": "string", "description": "must not contain any confidential_notes of either org" },
+    "options": { "type": "array", "items": { "type": "string" } },
+    "default": { "type": "string" },
+    "answer": { "type": ["string", "null"] },
+    "answered_by": { "type": ["object", "null"], "properties": { "org": { "type": "string" }, "user": { "type": "string" } } },
+    "ts": { "type": "string" },
+    "guardrail": { "$ref": "#/$defs/guardrail" }
+  },
+  "$defs": {
+    "guardrail": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["allowlist", "adapter_node", "predicate", "compensation_edge", "alignment_decision", "policy_value", "sla"] },
+        "edge": { "type": "string" },
+        "fields": { "type": "array", "items": { "type": "string" } },
+        "node": { "type": "object" },
+        "predicate": { "$ref": "predicate.schema.json" },
+        "from": { "type": "string" }, "to": { "type": "string" }, "on": { "type": "string" },
+        "decision": { "enum": ["keep_both", "merge", "relate", "distinct"] },
+        "value": {}
+      }
+    }
+  }
+}

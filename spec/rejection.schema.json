@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rejection.schema.json",
+  "type": "object",
+  "required": ["use_case_id", "code", "edge", "run", "seq", "receiver", "ts"],
+  "properties": {
+    "use_case_id": { "type": "string" },
+    "code": { "enum": ["CONTRACT_NOT_ACTIVE", "EDGE_NOT_IN_PROJECTION", "SCHEMA_MISMATCH", "ALLOWLIST_VIOLATION", "MISSING_FIELDS", "TYPE_MISMATCH", "PRECONDITION_FAILED"] },
+    "edge": { "type": "string" }, "run": { "type": "string" }, "seq": { "type": "integer" },
+    "receiver": { "enum": ["A", "B"] },
+    "missing": { "type": "array", "items": { "type": "string" } },
+    "field": { "type": "string" }, "expected": { "type": "string" }, "got": {},
+    "contract_version": { "type": "integer" },
+    "ts": { "type": "string" }
+  }
+}
