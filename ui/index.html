@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Merge Console</title>
+<title>InterLock</title>
 </head>
 <body>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -279,7 +279,7 @@ kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid va
 <script src="demo.js"></script>
 <div class="app" id="app">
   <header class="top">
-    <div class="brand"><span class="glyph" aria-hidden="true"></span>Merge Console</div>
+    <div class="brand"><span class="glyph" aria-hidden="true"></span>InterLock/div>
     <nav class="steps" id="steps" aria-label="Stages"></nav>
     <div class="topright">
       <button class="btn" id="btnReset" title="Reset every stage to its starting state">Reset demo</button>
@@ -999,7 +999,7 @@ function renderUpdate(){
   const money=n=>"$"+Number(n).toLocaleString("en-US");
   const NID={"A.add_items":"A.add_invoice_items","A.T_fulfilled":"A.END"}; const nid=id=>NID[id]||id;
   const leaf=p=>p.split(".").pop();
-  document.querySelector(".brand").insertAdjacentHTML("beforeend",`<small>InterLock · precomputed ${esc(D.generated_at.replace("T"," ").slice(0,16))} · alignments: ${esc(D.models.alignments_source)} · ${esc(D.models.llm)}</small>`);
+  document.querySelector(".brand").insertAdjacentHTML("beforeend",`<small>precomputed ${esc(D.generated_at.replace("T"," ").slice(0,16))} · alignments: ${esc(D.models.alignments_source)} · ${esc(D.models.llm)}</small>`);
   // inputs
   SRC_A=D.input.orgs.A.excerpt; SRC_B=D.input.orgs.B.excerpt;
   LINT.A=D.input.orgs.A.lint.map(f=>({code:f.check,sev:"info",text:`${f.check} · ${f.detail}`}));

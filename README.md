@@ -42,9 +42,9 @@ The company names are invented; the procedures are not. Two formats on purpose: 
 
 What each side guards: Northwind does not want Lakeside to know it uses Stripe or that managers approve big orders. Lakeside does not want Northwind to see how it judges eligibility. What they want together is a checkout where a Lakeside loan pays for a Northwind order.
 
-## The demo: the Merge Console, six stages
+## The demo: InterLock, six stages
 
-`scripts/view.sh` serves `ui/index.html`, the Merge Console. Everything it shows comes from `ui/demo.js`: every stage's results and the live model outputs, computed once by `python -m pmp.snapshot`. The page keeps its own layout and interactions (the merge plays out link by link, the interview is answered by clicking, each org signs the contract, the runs play step by step); a small data overlay at the bottom of the file fills in the real inputs, alignments, findings, questions, certificate, handoffs, rejection, repair and the threshold update. Arrow keys move between stages. `ui/walkthrough.html` is a second, denser view of the same data.
+`scripts/view.sh` serves `ui/index.html`, the InterLock console. Everything it shows comes from `ui/demo.js`: every stage's results and the live model outputs, computed once by `python -m pmp.snapshot`. The page keeps its own layout and interactions (the merge plays out link by link, the interview is answered by clicking, each org signs the contract, the runs play step by step); a small data overlay at the bottom of the file fills in the real inputs, alignments, findings, questions, certificate, handoffs, rejection, repair and the threshold update. Arrow keys move between stages. `ui/walkthrough.html` is a second, denser view of the same data.
 
 | Stage | What you see | Numbers |
 |---|---|---|
@@ -206,7 +206,7 @@ Tests: `pytest -q` runs about 125 tests offline against an in-memory backend, in
 | `pmp/runtime/mediator.py` | 7 | change stream on `rejections` → patch → contract v+1 |
 | `pmp/update.py` | 8 | `elements`, `derivations` → graph delta → `$graphLookup` reverse lookup → rebuild → contract v+1 |
 | `pmp/snapshot.py` | demo | runs everything once in memory and writes `ui/demo.json` and `ui/demo.js` |
-| `pmp/runtime/api.py`, `ui/index.html` | UI | the Merge Console over the snapshot (`ui/walkthrough.html`: the denser second view) |
+| `pmp/runtime/api.py`, `ui/index.html` | UI | the InterLock console over the snapshot (`ui/walkthrough.html`: the denser second view) |
 | `pmp/runtime/run.py` | 6, 7 | drives run 0001 and 0002 (in-process, HTTP, or `--in-memory`) |
 | `pmp/predicate.py` | all | the one predicate evaluator |
 | `pmp/spec.py`, `spec/*.schema.json` | all | every document validates against a JSON Schema |
