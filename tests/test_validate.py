@@ -104,6 +104,15 @@ def test_str03_clears_once_paid_is_established_upstream(world):
     assert [r["verdict"] for r in res] == ["pass"]
 
 
+def test_dup02_ignores_feeding_pairs(world):
+    merged, subs, als, _ = world
+    import copy
+    als2 = copy.deepcopy(als)
+    next(a for a in als2 if a["a_name"] == "fulfil_order")["sigma"] = 0.9      # live LLM did this once
+    res = [r for r in v.run(merged, subs, als2, [], db=None) if r["check"] == "DUP-02"]
+    assert [r["scope"] for r in res] == ["create_customer ~ createCustomer"]
+
+
 def test_dup02_clears_when_confirmed(world):
     merged, subs, als, _ = world
     import copy
@@ -137,4 +146,5 @@ def test_live_merge_and_validate_with_graphlookup():
     results = v.run(merged, subs, als, [], db=db)
     str01 = next(r for r in results if r["check"] == "STR-01")
     assert str01["verdict"] == "pass" and "$graphLookup" in str01["detail"]
-    assert {r["check"] for r in v.findings(results)} == set(EXPECTED)
+    rows = v.findings(results)
+    assert {r["check"] for r in rows} == set(EXPECTED) and len(rows) == 7

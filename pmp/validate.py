@@ -401,7 +401,8 @@ def dup_02(ctx: Ctx) -> list[dict]:
     """Near-duplicate pair (sigma >= 0.85) with no decision yet."""
     out = []
     for al in ctx.alignments:
-        if al.get("sigma", 0) < NEAR_DUPLICATE_SIGMA:
+        # a pair the aligner says feeds the other (or is a fallback for it) is by definition not a duplicate
+        if al.get("sigma", 0) < NEAR_DUPLICATE_SIGMA or al.get("proposal") in ("provides_input", "on_failure"):
             continue
         scope = f"{al.get('a_name', al['a'])} ~ {al.get('b_name', al['b'])}"
         if al.get("confirmed_by"):
