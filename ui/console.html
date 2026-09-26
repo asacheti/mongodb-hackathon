@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Merge Console</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F4F0; --surface:#FFFFFF; --surface-2:#F8F8F5; --ink:#1B2230; --muted:#5E6673; --line:#D3D7CF; --line-soft:#E6E8E2;
+  --a:#1E7F86; --a-soft:#DDEFF0; --a-ink:#145E63;
+  --b:#B5651D; --b-soft:#F6E7D8; --b-ink:#7A4210;
+  --c:#5B4FBF; --c-soft:#E6E2F7; --c-ink:#3F35A0;
+  --warn:#A33A2E; --warn-soft:#F7E1DD; --ok:#2E7D4F; --ok-soft:#DDEFE3; --amber:#8A5A00; --amber-soft:#FFF1CF;
+  --code:#EEF0EA; --halo:#FFFFFF;
+  --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; --disp:Manrope,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#12161C; --surface:#1A2029; --surface-2:#1F2630; --ink:#E6E9EE; --muted:#9AA3B0; --line:#2E3641; --line-soft:#262E39;
+  --a:#5CC3CA; --a-soft:#173A3D; --a-ink:#9EDDE1; --b:#E39A5C; --b-soft:#3E2A18; --b-ink:#F2C39A; --c:#A79CF0; --c-soft:#2A2547; --c-ink:#C9C2F7;
+  --warn:#F08A7D; --warn-soft:#3F2320; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; } }
+:root[data-theme="dark"]{
+  --bg:#12161C; --surface:#1A2029; --surface-2:#1F2630; --ink:#E6E9EE; --muted:#9AA3B0; --line:#2E3641; --line-soft:#262E39;
+  --a:#5CC3CA; --a-soft:#173A3D; --a-ink:#9EDDE1; --b:#E39A5C; --b-soft:#3E2A18; --b-ink:#F2C39A; --c:#A79CF0; --c-soft:#2A2547; --c-ink:#C9C2F7;
+  --warn:#F08A7D; --warn-soft:#3F2320; --ok:#7BD1A0; --ok-soft:#1B3A2A; --amber:#F0C468; --amber-soft:#3A2F14; --code:#222A35; --halo:#1A2029; color-scheme:dark; }
+
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13.5px;line-height:1.45}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.app{min-height:100%;display:flex;flex-direction:column}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:16px;padding:0 20px;height:56px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:15px;letter-spacing:-.01em}
+.brand .glyph{width:26px;height:26px;border-radius:7px;background:conic-gradient(from 200deg,var(--a),var(--c),var(--b),var(--a))}
+.brand small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0}
+.steps{display:flex;gap:4px;margin-inline:auto;overflow-x:auto}
+.steps button{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-family:var(--mono);font-size:12px;white-space:nowrap}
+.steps button .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--line-soft);font-size:10.5px}
+.steps button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.steps button.on .n{background:var(--bg);color:var(--ink)}
+.steps button.done .n{background:var(--ok-soft);color:var(--ok)}
+.topright{display:flex;gap:8px;align-items:center}
+.btn{padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12.5px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9}
+.btn.a{background:var(--a);color:#fff;border-color:var(--a)} .btn.b{background:var(--b);color:#fff;border-color:var(--b)}
+.btn.c{background:var(--c);color:#fff;border-color:var(--c)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:11.5px}
+.btn.icon{width:30px;padding:0;justify-content:center;height:30px}
+
+/* stage body */
+.stage{flex:1;display:none;flex-direction:column;gap:12px;padding:14px 20px 20px}
+.stage.on{display:flex}
+.stagehead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.stagehead h1{font-family:var(--disp);font-size:20px;font-weight:800;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.stagehead p{margin:0;color:var(--muted);max-width:78ch}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.gridR{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
+.gridR.wide{grid-template-columns:minmax(0,1fr) 420px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.checks.wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.checks.wide > div:last-child{grid-column:1 / -1}
+.sigs.wide{flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px 24px}
+.sigs.wide .label{width:100%}
+.inv.wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.inv.wide > div:first-child{grid-column:1 / -1}
+@media (max-width:980px){.grid2,.gridR,.gridR.wide{grid-template-columns:1fr}}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.panel.orgA{border-top:3px solid var(--a)} .panel.orgB{border-top:3px solid var(--b)}
+.ph{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line-soft)}
+.ph h2{font-family:var(--disp);font-size:14.5px;font-weight:700;margin:0}
+.ph .sub{color:var(--muted);font-size:12.5px}
+.ph .right{margin-left:auto;display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pf{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--line-soft);background:var(--surface-2);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.pf .right{margin-left:auto;font-family:var(--mono);font-size:11px}
+details.notes{display:block} details.notes summary{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none} details.notes summary::-webkit-details-marker{display:none} details.notes > div{padding-top:6px;color:var(--ink)}
+.label{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.pill.a{background:var(--a-soft);color:var(--a-ink)} .pill.b{background:var(--b-soft);color:var(--b-ink)} .pill.c{background:var(--c-soft);color:var(--c-ink)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.amber{background:var(--amber-soft);color:var(--amber)}
+.pill.line{border-color:var(--line);color:var(--muted)} .pill.dash{border:1px dashed var(--line);color:var(--muted)}
+.pill.solid-ink{background:var(--ink);color:var(--bg)}
+
+pre.src{margin:0;padding:12px 14px;background:var(--code);font-family:var(--mono);font-size:11px;line-height:1.5;overflow:auto;max-height:190px;white-space:pre;border-bottom:1px solid var(--line-soft)}
+.srchead{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 0}
+.graphwrap{overflow-x:auto;padding:8px 10px}
+.graphwrap svg{display:block;width:100%;height:auto;min-width:960px;font-family:var(--sans)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;border:1px solid var(--line);display:inline-block}
+.ln{width:16px;border-top:2px solid var(--line);display:inline-block}
+
+/* svg graph */
+.node rect,.node circle{transition:opacity .35s, stroke-width .15s}
+.node text{fill:var(--ink);font-size:11px;font-weight:500}
+.node .desc{fill:var(--muted);font-size:8.5px;font-weight:400}
+.node.ADAPTER .desc{fill:var(--c)}
+.node.ACTION rect{fill:var(--surface);stroke:var(--muted);stroke-width:1}
+.node.handoff.A rect{fill:var(--a-soft);stroke:var(--a)} .node.handoff.B rect{fill:var(--b-soft);stroke:var(--b)}
+.node.HUMAN_GATE rect{fill:var(--surface);stroke:var(--muted);stroke-dasharray:3 2}
+.node.ADAPTER rect{fill:var(--c-soft);stroke:var(--c);stroke-width:1.4}
+.node.END_fail rect{fill:var(--warn-soft);stroke:var(--warn)} .node.END_fail text{fill:var(--warn)}
+.node.START circle,.node.END circle{fill:var(--ink)}
+.node.OPAQUE rect{fill:var(--surface-2);stroke:var(--muted);stroke-width:1.4;stroke-dasharray:6 3}
+.node.OPAQUE .t{font-family:var(--disp);font-weight:700;font-size:12px}
+.node.OPAQUE .k{font-family:var(--mono);font-size:10px;fill:var(--ink);font-weight:500}
+.node.OPAQUE .v{font-size:10px;fill:var(--muted);font-weight:400}
+.node:hover rect{stroke-width:2}
+.edge path{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linejoin:round}
+.edge.ON_FAILURE path{stroke:var(--warn);stroke-dasharray:4 3}
+.edge.boundary path{stroke:var(--c);stroke-width:1.9}
+.edge text{font-size:9.5px;fill:var(--muted);paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round}
+.edge.boundary text{fill:var(--ink);font-weight:600;font-size:10px}
+.edge.boundary .sub{fill:var(--muted);font-weight:400;font-size:8.5px}
+.edge.pair path{stroke:var(--muted);stroke-dasharray:2 3;stroke-width:1.3} .edge.pair rect{stroke:var(--muted);stroke-dasharray:3 2}
+.edge.cand path{stroke-dasharray:6 4}
+.edge.ON_FAILURE text{fill:var(--warn)}
+.edge.flag path{stroke:var(--warn);stroke-width:2.4}
+.lane .lt{font-family:var(--disp);font-weight:700;font-size:11.5px}
+.lane.A .lt{fill:var(--a)} .lane.B .lt{fill:var(--b)}
+.lane.A .bg{fill:var(--a-soft);opacity:.45} .lane.B .bg{fill:var(--b-soft);opacity:.45}
+.fade{opacity:0;pointer-events:none;transition:opacity .45s}
+.show{opacity:1;pointer-events:auto;transition:opacity .45s}
+.dim{opacity:.28;transition:opacity .45s}
+svg .halo{paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round}
+
+/* merge stage */
+.phasebar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.phases{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px}
+.phases .ph-item{padding:3px 9px;border-radius:999px;background:var(--line-soft);color:var(--muted)}
+.phases .ph-item.done{background:var(--ok-soft);color:var(--ok)} .phases .ph-item.cur{background:var(--ink);color:var(--bg)}
+.progress{flex:1;min-width:120px;height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--c);width:0;transition:width .4s}
+.findings{display:flex;flex-direction:column;gap:6px;padding:10px 12px;flex:1}
+.findings.wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:8px;align-items:start}
+.findings.wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px}
+.finding{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:6px;background:var(--surface);animation:fadein .4s ease-out}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+[hidden]{display:none!important}
+.finding .row{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px}
+.finding .row .code{font-weight:500}
+.finding .row .scope{color:var(--muted);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.finding .row .pill{margin-left:auto}
+.finding .txt{font-size:12px;color:var(--muted)}
+.finding.pass{border-color:var(--ok-soft)}
+.finding{cursor:pointer} .finding:hover{border-color:var(--muted)} .finding.sel{border-color:var(--c);box-shadow:0 0 0 2px var(--c-soft)}
+.narr{padding:10px 14px;border-top:1px solid var(--line-soft);background:var(--surface-2);font-size:12.5px;color:var(--muted);min-height:44px}
+.narr b{color:var(--ink);font-weight:600}
+
+/* interview */
+.qlist{display:flex;flex-direction:column;gap:8px;padding:12px 14px;flex:1}
+.q{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:6px;background:var(--surface);text-align:left;width:100%}
+.q .head{display:flex;flex-direction:column;gap:6px;cursor:pointer;background:none;border:0;padding:0;text-align:left;width:100%;font:inherit;color:inherit}
+.q.sel{border-color:var(--c);box-shadow:0 0 0 2px var(--c-soft)} .q.done{border-left:3px solid var(--ok)}
+.q .body{display:flex;flex-direction:column;gap:10px;padding-top:8px;border-top:1px solid var(--line-soft)}
+.choices{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.choice{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;padding:6px 8px;border:1px solid var(--line-soft);border-radius:6px;cursor:pointer}
+.choice:has(input:checked){border-color:var(--c);background:var(--c-soft)}
+.choice input{margin:3px 0 0}
+.choice .sugg{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--c-ink);margin-left:6px}
+.choices[disabled] .choice{cursor:default;opacity:.85}
+.q textarea{font:inherit;font-size:12.5px;color:var(--ink);background:var(--surface);padding:8px;border:1px solid var(--line);border-radius:6px;resize:vertical;min-height:54px;width:100%}
+.q .row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;flex-wrap:wrap}
+.q .row .pill{margin-left:auto}
+.q .txt{font-size:12.5px}
+.q .def{font-size:11.5px;color:var(--muted)}
+.inbox{padding:14px;display:flex;flex-direction:column;gap:12px;flex:1}
+.card{border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.card.a{border-left:3px solid var(--a)} .card.b{border-left:3px solid var(--b)}
+.card .meta{display:flex;gap:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);flex-wrap:wrap}
+.card .qtext{font-size:13.5px;line-height:1.5}
+.card .why{font-size:11.5px;color:var(--muted)}
+.card textarea{font:inherit;font-size:12.5px;color:var(--ink);background:var(--surface);padding:8px;border:1px solid var(--line);border-radius:6px;resize:vertical;min-height:54px;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:4px;background:var(--c-soft);color:var(--c-ink)}
+.chip.deny{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{padding:5px 12px;border:0;background:transparent;font-size:12.5px;border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--ink);color:var(--bg)} .seg button.on.a{background:var(--a);color:#fff} .seg button.on.b{background:var(--b);color:#fff} .seg button.on.c{background:var(--c);color:#fff}
+
+/* certificate */
+.checks{display:flex;flex-direction:column;gap:4px;padding:10px 12px}
+.check{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line-soft);border-radius:6px}
+.check .nm{font-family:var(--mono);font-size:11px;width:118px;flex-shrink:0}
+.check .cd{font-size:11.5px;color:var(--muted);flex:1;min-width:0}
+.hashbox{margin:0 12px 10px;padding:8px 10px;border:1px dashed var(--line);border-radius:6px;font-family:var(--mono);font-size:10.5px;color:var(--muted);line-height:1.6;word-break:break-all}
+.sigs{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-top:1px solid var(--line-soft);background:var(--surface-2)}
+.sig{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.sig .box{width:14px;height:14px;border-radius:3px;border:1px solid var(--muted);flex-shrink:0}
+.sig .box.on{background:var(--ok);border-color:var(--ok)}
+.sig .box.med{background:var(--c);border-color:var(--c)}
+.sig .btn{margin-left:auto}
+.inv{display:flex;flex-direction:column;gap:6px;padding:10px 12px}
+.inv div{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:7px 10px;border:1px solid var(--line-soft);border-radius:6px}
+.inv .id{font-family:var(--mono);font-size:11px;width:44px;flex-shrink:0}
+.inv .pill{margin-left:auto}
+.banner{padding:8px 14px;font-size:12.5px;border-bottom:1px solid var(--line-soft)}
+.banner.a{background:var(--a-soft);color:var(--a-ink)} .banner.b{background:var(--b-soft);color:var(--b-ink)} .banner.c{background:var(--c-soft);color:var(--c-ink)}
+
+/* run */
+.msgs{display:flex;flex-direction:column;gap:8px;padding:12px 14px;flex:1}
+.msg{display:flex;flex-direction:column;gap:4px;padding:9px 12px;border:1px solid var(--line-soft);border-left-width:3px;border-radius:6px;background:var(--surface)}
+.msg.okm{border-left-color:var(--ok)} .msg.note{border-left-color:var(--line);color:var(--muted)} .msg.rej{border-left-color:var(--warn);background:var(--warn-soft)} .msg.pend{border:1px dashed var(--line);color:var(--muted)}
+.msg .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.msg .dir{font-weight:600;font-size:13px}
+.msg .edge{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.msg .t{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.msg .pay{font-family:var(--mono);font-size:11px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.msg.note .pay{color:var(--muted)}
+.msg .chk{font-size:11.5px;color:var(--muted)}
+.msg .chk .x{color:var(--warn);font-weight:600}
+.agent{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.agent .row{display:flex;align-items:center;gap:8px}
+.agent .row b{font-family:var(--disp);font-weight:700}
+.agent .row .mono{margin-left:auto;color:var(--muted);font-size:10.5px}
+.agent .st{font-size:12px;color:var(--muted)}
+.what{padding:12px 14px;display:flex;flex-direction:column;gap:10px;flex:1}
+.what p{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.what p b{color:var(--ink)}
+.consq{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10.5px;color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:6px;line-height:1.55}
+
+.updgrid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.4fr)}
+@media (max-width:980px){.updgrid{grid-template-columns:1fr}}
+.changes{display:flex;flex-direction:column;gap:6px;padding:12px;border-right:1px solid var(--line-soft)}
+@media (max-width:980px){.changes{border-right:0;border-bottom:1px solid var(--line-soft)}}
+.impact .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.ba{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px}
+.ba .was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--warn)}
+.ba .arr{color:var(--muted)}
+.ba .now{font-weight:600;padding:3px 8px;border-radius:4px;background:var(--c-soft);color:var(--c-ink)}
+.chip b{font-weight:600}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.bad{background:var(--warn-soft);color:var(--warn)}
+.change{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line-soft);border-radius:6px;background:var(--surface);text-align:left;font-size:12.5px;width:100%}
+.change:hover{border-color:var(--muted)} .change.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c-soft)}
+.change .pill{margin-left:auto}
+.impact{display:flex;flex-direction:column;gap:10px;padding:12px}
+.impact .k{display:flex;flex-direction:column;gap:4px}
+.impact .k .label{margin-bottom:2px}
+.impact .row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 10px;border:1px solid var(--line-soft);border-radius:6px}
+.impact .row .pill{margin-left:auto}
+.impact ul{margin:0;padding-left:18px;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.node.hl rect{stroke:var(--c);stroke-width:2.2;fill:var(--c-soft)} .node.hl text{fill:var(--ink)}
+.edge.hl path{stroke:var(--c);stroke-width:2.4} .edge.hl text{fill:var(--c-ink)} .edge.hl rect{stroke:var(--c);stroke-width:1.8;fill:var(--c-soft)}
+.node.added rect{stroke-dasharray:none}
+.dimmed{opacity:.32}
+@keyframes pulse{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+.node.hl.added rect{animation:pulse 1.6s ease-in-out infinite}
+.hcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.hcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;opacity:.55}
+.hcard.done{opacity:1;border-color:var(--ok)} .hcard.fail{opacity:1;border-color:var(--warn);background:var(--warn-soft)} .hcard.cur{opacity:1;border-color:var(--c)}
+.hcard .hd{display:flex;align-items:center;gap:8px}
+.hcard .hd b{font-family:var(--disp);font-size:14px}
+.hcard .hd .pill{margin-left:auto}
+.hcard .what{font-size:12.5px;color:var(--ink)}
+.hcard .chk{font-size:12px;color:var(--muted)}
+.hcard details{font-size:11.5px;color:var(--muted)} .hcard summary{cursor:pointer} .hcard pre{margin:6px 0 0;font-family:var(--mono);font-size:11px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.node.ran rect{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.6} .node.ran circle{fill:var(--ok)}
+.node.cur rect{fill:var(--c-soft);stroke:var(--c);stroke-width:2.2}
+.edge.ran path{stroke:var(--ok);stroke-width:2.2} .edge.ran rect{stroke:var(--ok);fill:var(--ok-soft)}
+.edge.failed path{stroke:var(--warn);stroke-width:2.6} .edge.failed rect{stroke:var(--warn);fill:var(--warn-soft)} .edge.failed text{fill:var(--warn)}
+.node.failed rect{fill:var(--warn-soft);stroke:var(--warn);stroke-width:2}
+.statusbar{display:flex;align-items:center;gap:14px;padding:8px 20px;border-top:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.statusbar .right{margin-left:auto;font-family:var(--mono);font-size:11px}
+kbd{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:var(--surface)}
+.tw{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><span class="glyph" aria-hidden="true"></span>Merge Console</div>
+    <nav class="steps" id="steps" aria-label="Stages"></nav>
+    <div class="topright">
+      <button class="btn" id="btnReset" title="Reset every stage to its starting state">Reset demo</button>
+    </div>
+  </header>
+
+  <!-- STAGE 0 · INPUTS -->
+  <section class="stage" data-stage="0">
+    <div class="stagehead"><h1>Two private procedures</h1></div>
+    <div class="grid2">
+      <div class="panel orgA">
+        <div class="ph"><h2>Company A · Northwind Outdoor</h2><span class="sub">the shop</span></div>
+        <pre class="src" id="srcA"></pre>
+        <div class="srchead"><span class="label">As a graph</span><span class="legend"><span><i class="sw" style="background:var(--a-soft);border-color:var(--a)"></i>the other company may see</span><span><i class="sw" style="border-style:dashed"></i>a person decides</span></span></div>
+        <div class="graphwrap" id="gA"></div>
+        <details class="pf notes"><summary id="lintA-s"></summary><div id="lintA"></div></details>
+      </div>
+      <div class="panel orgB">
+        <div class="ph"><h2>Company B · Lakeside BNPL</h2><span class="sub">the lender</span></div>
+        <pre class="src" id="srcB"></pre>
+        <div class="srchead"><span class="label">As a graph</span><span class="legend"><span><i class="sw" style="background:var(--b-soft);border-color:var(--b)"></i>the other company may see</span><span><i class="sw" style="background:var(--warn-soft);border-color:var(--warn)"></i>loan declined</span></span></div>
+        <div class="graphwrap" id="gB"></div>
+        <details class="pf notes"><summary id="lintB-s"></summary><div id="lintB"></div></details>
+      </div>
+    </div>
+    <div class="tw" style="justify-content:space-between">
+      <button class="btn primary" data-go="1">Submit both to the mediator →</button>
+    </div>
+  </section>
+
+  <!-- STAGE 1 · MERGE -->
+  <section class="stage" data-stage="1">
+    <div class="stagehead"><h1>Join and check</h1></div>
+    <div class="stack">
+      <div class="panel">
+        <div class="phasebar">
+          <div class="phases" id="phases"></div>
+          <div class="progress"><i id="prog"></i></div>
+          <div class="tw">
+            <button class="btn sm" id="mRestart">Replay</button>
+            <button class="btn sm" id="mStep">Skip ahead</button>
+          </div>
+        </div>
+        <div class="graphwrap" id="gMerge"></div>
+        <div class="narr" id="narr"></div>
+      </div>
+      <div class="panel" id="fpanel" hidden>
+        <div class="ph"><h2>What the checks found</h2><span class="sub" id="fcount">0 of 7</span></div>
+        <div class="findings wide" id="findings"></div>
+        <div class="pf"><span id="fsum">Validator idle.</span><button class="btn primary sm" style="margin-left:auto" id="toInterview" data-go="2" disabled>Ask the questions →</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2 · INTERVIEW -->
+  <section class="stage" data-stage="2">
+    <div class="stagehead"><h1>Five questions, fifteen minutes</h1><button class="btn sm" id="answerAll" style="margin-left:auto">Answer all</button></div>
+    <div class="grid2" id="qpanels"></div>
+    <div class="tw" style="gap:14px">
+      <div class="progress" style="flex:1"><i id="qprog"></i></div>
+      <span id="qstat" style="color:var(--muted);font-size:12px"></span>
+      <button class="btn primary" id="toContract" data-go="3">Build contract →</button>
+    </div>
+  </section>
+
+  <!-- STAGE 3 · CONTRACT -->
+  <section class="stage" data-stage="3">
+    <div class="stagehead"><h1>One joint procedure, two views of it</h1></div>
+    <div class="tw">
+      <span class="label">View as</span>
+      <div class="seg" id="viewSeg">
+        <button data-view="M" class="on c">Mediator sees</button>
+        <button data-view="A">Northwind sees</button>
+        <button data-view="B">Lakeside sees</button>
+      </div>
+      <span class="pill amber" id="cpill" style="margin-left:auto">awaiting 2 signatures</span>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="graphwrap" id="gContract"></div>
+        <div class="pf legend" id="clegend"></div>
+      </div>
+      <aside class="panel" id="crail"></aside>
+    </div>
+  </section>
+
+  <!-- STAGE 4 · RUN -->
+  <section class="stage" data-stage="4">
+    <div class="stagehead"><h1>Running it</h1></div>
+    <div class="stack">
+      <div class="panel">
+        <div class="phasebar">
+          <div class="seg" id="runSeg">
+            <button data-run="run_0001" class="on">A $2,780 order</button>
+            <button data-run="run_0002">A $12,400 order</button>
+          </div>
+          <span id="rsub" style="color:var(--muted);font-size:12.5px"></span>
+          <div class="progress"><i id="rprog"></i></div>
+          <span class="pill ok" id="rpill">ready</span>
+          <div class="tw">
+            <button class="btn icon" id="rRestart" aria-label="Restart">⏮</button>
+            <button class="btn icon primary" id="rPlay" aria-label="Play">▶</button>
+            <button class="btn icon" id="rStep" aria-label="Step forward">⏭</button>
+          </div>
+        </div>
+        <div class="graphwrap" id="gRun"></div>
+        <div class="pf legend"><span><i class="sw" style="background:var(--ok-soft);border-color:var(--ok)"></i>done</span><span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>running now</span><span><i class="sw" style="background:var(--warn-soft);border-color:var(--warn)"></i>refused</span></div>
+      </div>
+      <div class="hcards" id="hcards"></div>
+    </div>
+  </section>
+
+  <!-- STAGE 5 · UPDATE -->
+  <section class="stage" data-stage="5">
+    <div class="stagehead"><h1>Change one thing, rebuild only what depends on it</h1></div>
+    <div class="stack">
+      <div class="panel">
+        <div class="ph"><h2 id="uTitle">Joint procedure</h2><div class="right" id="uTag"></div></div>
+        <div class="graphwrap" id="gUpdate"></div>
+        <div class="pf legend"><span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>changed or rebuilt</span><span><i class="sw" style="background:var(--surface);border-color:var(--line)"></i>carried forward untouched</span></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h2>A change in one company's procedure</h2></div>
+        <div class="updgrid">
+          <div class="changes" id="changes"></div>
+          <div class="impact" id="impact"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="statusbar">
+    <span class="right"><kbd>←</kbd> <kbd>→</kbd> stages</span>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   DATA — curated mirror of mock/stages/*.json. Swap load() for
+   fetch()/Mongo later; everything below renders from this object.
+   ============================================================ */
+const ORG = {
+  A:{id:"ORG_A_northwind", name:"Northwind Outdoor", short:"Northwind", role:"the shop"},
+  B:{id:"ORG_B_lakeside_bnpl", name:"Lakeside BNPL", short:"Lakeside", role:"the lender"}
+};
+const SRC_A = `---
+name: invoice-and-fulfil
+allowed-tools: stripe:customers.create stripe:invoices.create
+  stripe:invoiceitems.create stripe:invoices.finalize stripe:invoices.send
+  stripe:invoices.pay wms:create_shipment
+---
+1. Create a Customer (POST /v1/customers) with name and email. Store the id.
+2. Create an Invoice (POST /v1/invoices) collection_method=send_invoice, days_until_due=30.
+3. Add invoice items (POST /v1/invoiceitems) with pricing[price]; max 250 items.
+4. Finalize (POST /v1/invoices/{id}/finalize). Monetary values immutable afterwards.
+5. Collect payment: send the invoice or confirm its PaymentIntent (Payment Element).
+6. Listen for invoice.paid before fulfilling. On invoice.payment_failed, offer another attempt.
+7. On invoice.paid, start shipping. Orders of USD 10,000 or more need a manager's
+   approval first (company policy, not Stripe).`;
+const SRC_B = `workflowId: ApplyForLoanAtCheckout
+steps:
+  - stepId: checkLoanCanBeProvided          # findEligibleProducts · 200
+    onSuccess: [qualifyingProductsFound -> getCustomerTermsAndConditions,
+                existingCustomerNotEligible -> end, qualifyingProductsNotFound -> end]
+  - stepId: getCustomerTermsAndConditions   # getTermsAndConditions · 200
+  - stepId: createCustomer                  # 201 eligible -> initiateBnplTransaction / 200 not -> end
+  - stepId: initiateBnplTransaction         # createBnplTransaction · 202
+  - stepId: authenticateCustomerAndAuthorizeLoan   # getAuthorization · 302
+    parameters: { redirectAuthToken: $steps.authenticateCustomerAndAuthorizeLoan.outputs.redirectAuthToken }
+  - stepId: retrieveFinalizedPaymentPlan    # retrieveBnplLoanTransaction · 200
+    parameters: { loanTransactionId: $steps.initiateBnplTransaction.outputs.loanTransactionId }
+  - stepId: updateOrderStatus               # 204 · "order fulfilled" activates the loan`;
+
+const LINT = {
+  A:[{code:"LINT-02",sev:"info",text:"The sentence “orders of $10,000 or more need a manager's approval” became a rule and an approval step."}],
+  B:[{code:"LINT-01 ×2",sev:"warn",text:"Two slips in the published example: one step refers to its own output, another uses a loan id nothing produces. Fixed and flagged for the owner."}]
+};
+
+// Nodes with layout hints. Lane A: row 0 upper, row 1 main. Lane B: row 0 main, row 1 lower.
+const NODES = [
+  {id:"A.START",lane:"A",type:"START",col:-0.64,row:1},
+  {id:"A.create_customer",lane:"A",type:"ACTION",col:0,row:1,label:"create_customer",desc:"POST /v1/customers",tools:"stripe:customers.create · side_effecting"},
+  {id:"A.create_invoice",lane:"A",type:"ACTION",col:1,row:1,label:"create_invoice",desc:"days_until_due=30",tools:"stripe:invoices.create · side_effecting"},
+  {id:"A.add_invoice_items",lane:"A",type:"ACTION",col:2,row:1,label:"add_invoice_items",desc:"max 250",tools:"stripe:invoiceitems.create"},
+  {id:"A.finalize_invoice",lane:"A",type:"ACTION",vis:"handoff",col:3,row:1,label:"finalize_invoice",desc:"totals immutable",tools:"stripe:invoices.finalize · side_effecting"},
+  {id:"A.adapt_basket_for_lender",lane:"A",type:"ADAPTER",vis:"handoff",col:4,row:1,label:"convert basket",sub:"added · cents → dollars",desc:"added from q2: reshapes Stripe line items into the lender's product list",tools:"price_id → productCode · unit_amount_minor × qty / 100 → purchaseAmount",merged:true},
+  {id:"A.collect_payment",lane:"A",type:"ACTION",col:4.7,row:0,label:"collect_payment",desc:"card · Payment Element",tools:"stripe:invoices.send"},
+  {id:"A.mark_invoice_paid_out_of_band",lane:"A",type:"ADAPTER",vis:"handoff",col:6,row:1,label:"mark invoice paid",sub:"added · plan authorized",desc:"added from q3: counts an authorized loan plan as payment, which fires invoice.paid",tools:"stripe:invoices.pay paid_out_of_band=true · guard: status == authorized AND total == invoice.total",merged:true},
+  {id:"A.await_invoice_paid",lane:"A",type:"ACTION",col:7,row:1,label:"await_invoice_paid",desc:"webhook invoice.paid",tools:"stripe:webhooks.listen · verify"},
+  {id:"A.approve_large_order",lane:"A",type:"HUMAN_GATE",col:8,row:0,label:"approve ≥ $10k",sub:"HUMAN_GATE",tools:"policy: max_amount USD 10,000 · requires_human_approval"},
+  {id:"A.fulfil_order",lane:"A",type:"ACTION",vis:"handoff",col:8,row:1,label:"fulfil_order",desc:"wms.create_shipment",tools:"wms:create_shipment · side_effecting · gated"},
+  {id:"A.END",lane:"A",type:"END",col:8.95,row:1},
+  {id:"B.START",lane:"B",type:"START",col:2.36,row:0},
+  {id:"B.checkLoanCanBeProvided",lane:"B",type:"ACTION",vis:"handoff",col:3,row:0,label:"checkLoanCan\nBeProvided",desc:"findEligibleProducts · 200",tools:"BnplApi:findEligibleProducts · verify"},
+  {id:"B.getCustomerTermsAndConditions",lane:"B",type:"ACTION",col:4,row:0,label:"getCustomerTerms\nAndConditions",desc:"static data",tools:"BnplApi:getTermsAndConditions · pure"},
+  {id:"B.END_not_eligible",lane:"B",type:"END_fail",vis:"handoff",col:3.6,row:1,label:"declined",desc:"loan declined"},
+  {id:"B.createCustomer",lane:"B",type:"ACTION",col:5,row:0,label:"createCustomer",desc:"eligibility · 201 / 200",tools:"BnplApi:createCustomer · side_effecting"},
+  {id:"B.initiateBnplTransaction",lane:"B",type:"ACTION",col:6,row:0,label:"initiateBnpl\nTransaction",desc:"202",tools:"BnplApi:createBnplTransaction · side_effecting"},
+  {id:"B.authenticateCustomerAndAuthorizeLoan",lane:"B",type:"ACTION",col:7,row:0,label:"authenticateCustomer\nAndAuthorizeLoan",desc:"302 redirect",tools:"BnplApi:getAuthorization · side_effecting"},
+  {id:"B.retrieveFinalizedPaymentPlan",lane:"B",type:"ACTION",vis:"handoff",col:8,row:0,label:"retrieveFinalized\nPaymentPlan",desc:"200",tools:"BnplApi:retrieveBnplLoanTransaction · verify"},
+  {id:"B.updateOrderStatus",lane:"B",type:"ACTION",vis:"handoff",col:9,row:0,label:"updateOrderStatus",desc:"204 · activates loan",tools:"BnplApi:updateBnplLoanTransactionStatus · side_effecting"},
+  {id:"B.END",lane:"B",type:"END",col:9.64,row:0}
+];
+// Edges. `when`: "orig" = only before merge, "merged" = only after merge; default both.
+// route: straight | vert | up-right | right-down | down-right | down-left | hop | loop-below | fb | cross ; os/ot = port offsets (px); lab = label side
+const EDGES = [
+  {s:"A.START",t:"A.create_customer"},{s:"A.create_customer",t:"A.create_invoice"},{s:"A.create_invoice",t:"A.add_invoice_items"},{s:"A.add_invoice_items",t:"A.finalize_invoice"},
+  {s:"A.finalize_invoice",t:"A.collect_payment",when:"orig",route:"up-right",os:24},
+  {s:"A.finalize_invoice",t:"A.adapt_basket_for_lender",when:"merged"},
+  {s:"A.collect_payment",t:"A.await_invoice_paid",route:"right-down",ot:-24,label:"card paid"},
+  {s:"A.await_invoice_paid",t:"A.collect_payment",rel:"ON_FAILURE",route:"loop-below",os:-24,ot:-18,lx:-70,label:"payment failed → try again"},
+  {s:"A.await_invoice_paid",t:"A.approve_large_order",route:"up-right",os:24,label:"≥ $10k"},
+  {s:"A.await_invoice_paid",t:"A.fulfil_order",label:"< $10k"},
+  {s:"A.approve_large_order",t:"A.fulfil_order",route:"vert",label:"approved"},
+  {s:"A.fulfil_order",t:"A.END"},
+  {s:"A.mark_invoice_paid_out_of_band",t:"A.await_invoice_paid",when:"merged",label:"counts as paid",lab:"above"},
+  {s:"B.START",t:"B.checkLoanCanBeProvided"},
+  {s:"B.checkLoanCanBeProvided",t:"B.getCustomerTermsAndConditions",label:"qualifying items",lab:"above"},
+  {s:"B.checkLoanCanBeProvided",t:"B.END_not_eligible",rel:"ON_FAILURE",route:"down-right"},
+  {s:"B.getCustomerTermsAndConditions",t:"B.createCustomer",label:"check needed"},
+  {s:"B.getCustomerTermsAndConditions",t:"B.initiateBnplTransaction",route:"hop",label:"no check needed"},
+  {s:"B.createCustomer",t:"B.initiateBnplTransaction",label:"eligible",lab:"above"},
+  {s:"B.createCustomer",t:"B.END_not_eligible",rel:"ON_FAILURE",route:"down-left",label:"not eligible"},
+  {s:"B.initiateBnplTransaction",t:"B.authenticateCustomerAndAuthorizeLoan",label:"customer must authorize"},
+  {s:"B.initiateBnplTransaction",t:"B.retrieveFinalizedPaymentPlan",route:"hop",label:"no authorization needed"},
+  {s:"B.authenticateCustomerAndAuthorizeLoan",t:"B.retrieveFinalizedPaymentPlan"},
+  {s:"B.retrieveFinalizedPaymentPlan",t:"B.updateOrderStatus"},
+  {s:"B.updateOrderStatus",t:"B.END"},
+  // merge candidate: boundary links proposed by matching, before any question is answered
+  {id:"c1",s:"A.finalize_invoice",t:"B.checkLoanCanBeProvided",when:"cand",boundary:true,gy:26,label:"the finished invoice is the basket the lender filters",sub:"proposed handoff · confidence 0.90",narr:"<b>Match 1.</b> Northwind's finished invoice looks like the basket Lakeside's first step filters. Proposed as a handoff (0.90)."},
+  {id:"p1",s:"A.create_customer",t:"B.createCustomer",when:"cand",pair:true,gy:104,lx:-90,label:"same name — same meaning?",sub:"0.93 similar · left for a person",narr:"<b>Match 2.</b> Both sides have a step called “create customer”. The names match (0.93) but the meanings don't: a billing record versus an eligibility check. Left undecided for a person."},
+  {id:"c3",s:"A.fulfil_order",t:"B.updateOrderStatus",when:"cand",boundary:true,os:20,gy:50,label:"shipping activates the loan",sub:"proposed handoff · confidence 0.86",narr:"<b>Match 3.</b> Lakeside activates the loan when the shop reports shipping. Proposed as a handoff (0.86)."},
+  {id:"c2",s:"B.retrieveFinalizedPaymentPlan",t:"A.await_invoice_paid",when:"cand",boundary:true,os:-20,gy:80,label:"“plan authorized” ~ “invoice paid”",sub:"related, not the same · 0.62",narr:"<b>Match 4.</b> Both sides wait for “payment settled”, but an authorized loan plan is not a paid invoice in Stripe's terms. Related, not the same (0.62)."},
+  {id:"c4",s:"B.END_not_eligible",t:"A.collect_payment",when:"cand",rel:"ON_FAILURE",route:"fb",label:"if the lender declines → card payment?",narr:"<b>Match 5.</b> If Lakeside declines, the shop needs somewhere to go. Proposed fallback: card payment (0.58)."},
+  // boundary
+  {id:"h1",s:"A.adapt_basket_for_lender",t:"B.checkLoanCanBeProvided",when:"merged",boundary:true,gy:26,label:"h1 · basket + customer",sub:"sends: invoice id, items, name, email"},
+  {id:"h2",s:"B.retrieveFinalizedPaymentPlan",t:"A.mark_invoice_paid_out_of_band",when:"merged",boundary:true,os:-20,gy:86,label:"h2 · payment plan",sub:"returns: status, loan id, total"},
+  {id:"h3",s:"A.fulfil_order",t:"B.updateOrderStatus",when:"merged",boundary:true,os:20,gy:50,label:"h3 · shipped",sub:"only if under $10k or manager-approved"},
+  {id:"fb",s:"B.END_not_eligible",t:"A.collect_payment",when:"merged",rel:"ON_FAILURE",route:"fb",label:"lender declined → take card instead"}
+];
+const FINDINGS = [
+  {id:"IO-01",hl:{nodes:["A.finalize_invoice","B.checkLoanCanBeProvided"],edges:["c1"]},scope:"h1",route:"auto",rung:2,text:"Prices are in cents with a price id on one side, dollars with a product code on the other. A converter step is proposed.",narr:"<b>Units don't match.</b> Fixed automatically: a converter step will be inserted on Northwind's side (it appears once q2 confirms who converts)."},
+  {id:"POL-01",hl:{nodes:["A.approve_large_order","B.updateOrderStatus"],edges:["c3"]},scope:"h3",route:"auto",rung:1,pass:true,text:"Only Northwind has an approval rule. The stricter side wins: the $10,000 limit becomes a condition on the handoff.",narr:"<b>Policies combine.</b> Only Northwind has an approval rule, so the stricter side wins. Lakeside will enforce a $10,000 condition it never wrote."},
+  {id:"IO-02",hl:{nodes:["A.finalize_invoice","B.checkLoanCanBeProvided"],edges:["c1"]},scope:"h1",route:"ask",q:"q1",text:"The customer's name and email would be sent to Lakeside without anyone having said that's allowed.",narr:"<b>Personal data would cross.</b> Nobody has said the customer's name and email may be shared → ask Northwind."},
+  {id:"DUP-02",hl:{nodes:["A.create_customer","B.createCustomer"],edges:["p1"]},scope:"pair",route:"ask",q:"q1",text:"Both sides have a step called “create customer”, but they mean different things.",narr:"<b>Same name, different meaning.</b> Both “create customer” steps need a ruling → folded into the same question."},
+  {id:"STR-03",hl:{nodes:["A.await_invoice_paid","A.fulfil_order","B.retrieveFinalizedPaymentPlan","B.updateOrderStatus"],edges:["c2","c3"]},scope:"merged",route:"ask",q:"q3",text:"The shop ships only after payment; the lender counts the loan as paid only after the shop ships. A loop with no way in.",narr:"<b>A deadlock.</b> Each side waits for the other. Someone has to decide what counts as “paid” → ask Northwind's finance controller."},
+  {id:"PRE-01",hl:{nodes:["A.fulfil_order","B.updateOrderStatus"],edges:["c3"]},scope:"h3",route:"ask",q:"q4",text:"The lender's last step needs the loan id, which the shop never receives.",narr:"<b>A missing field.</b> The lender's last step needs the loan id, which the shop never receives → ask Lakeside."},
+  {id:"FAIL-01",hl:{nodes:["B.END_not_eligible","A.collect_payment"],edges:["c4"]},scope:"h1",route:"ask",q:"q5",text:"The lender may decline, and the shop has no plan for that.",narr:"<b>No plan for a decline.</b> The lender may say no, and the shop's procedure has no path for it → ask Northwind."}
+];
+const QUESTIONS = [
+  {id:"q1",options:["Keep both steps; send the customer's name and email only","Keep both steps; send nothing about the customer (Lakeside enrolls them itself)","Merge them into one step"],to:"A",trigger:"IO-02 + DUP-02",who:"ops lead",text:"Your “create customer” step and Lakeside's share a name, not a meaning: yours is a billing record, theirs an eligibility check. Keep both? And may the customer's name and email go to Lakeside?",def:"keep both; send name and email only",answer:"Keep both. Send name and email; never the Stripe customer id or the payment method.",by:"ops.lead@northwind.example · 14:22",
+   guardrails:[{t:"decision",v:"keep both steps"},{t:"may be sent",v:"invoice id, currency, total, line items, customer name, customer email"},{t:"never sent",v:"Stripe customer id · payment method",deny:true}]},
+  {id:"q2",options:["Northwind converts; product code = Stripe price ID","Lakeside converts; Northwind sends its line items as they are"],to:"A",trigger:"IO-01",who:"ops lead",text:"Your prices are in cents with a Stripe price ID; Lakeside wants dollars and a product code. Who converts, and what is the product code?",def:"Northwind converts; product code = Stripe price ID",answer:"Northwind converts cents to dollars; the product code is the Stripe price ID.",by:"ops.lead@northwind.example · 14:24",defaultAccepted:true,
+   guardrails:[{t:"new step",v:"convert basket for the lender (cents → dollars, price id → product code)"}]},
+  {id:"q3",options:["Yes, once the plan is authorized and its total matches the invoice","No, only once the first installment has been collected","No, never; the shop only ships on card payment"],to:"A",trigger:"STR-03",who:"finance controller",text:"You ship only after Stripe reports the invoice paid. Lakeside activates the loan only after you report shipping. Does an authorized Lakeside payment plan count as payment, so shipping can start? If yes, you would mark the invoice paid “out of band” (a real Stripe feature), which fires the same “invoice paid” event you already wait for.",def:"yes, an authorized plan counts as paid",answer:"Yes, provided the plan is authorized and its total equals the invoice total.",by:"finance.controller@northwind.example · 14:31",
+   guardrails:[{t:"new step",v:"mark invoice paid once the loan plan is authorized"},{t:"condition",v:"plan status == authorized AND plan total == invoice total"}]},
+  {id:"q4",options:["Yes, include the loan ID in the payment plan","No; Northwind should use the plan's URL instead"],to:"B",trigger:"PRE-01",who:"integration",text:"Your last step needs the loan ID, which Northwind never sees. Include it in the payment plan you return, so Northwind can send it back with the shipping notice?",def:"yes",answer:"Yes.",by:"integration@lakeside-bnpl.example · 14:35",defaultAccepted:true,
+   guardrails:[{t:"returned to the shop",v:"plan status, loan id, total"}]},
+  {id:"q5",options:["Fall back to card payment","Cancel the invoice","Hold the invoice and email the customer"],to:"A",trigger:"FAIL-01",who:"ops lead",text:"If Lakeside declines the loan, what happens to the invoice?",def:"fall back to card payment",answer:"Fall back to card payment.",by:"ops.lead@northwind.example · 14:37",defaultAccepted:true,
+   guardrails:[{t:"fallback path",v:"if the lender declines → collect card payment"}]}
+];
+const CERT_GROUPS = [
+  {name:"Every step leads to an end",codes:"STR-01..04",result:"4 pass",cls:"ok"},
+  {name:"Data shapes fit across handoffs",codes:"IO-01 ×3 · IO-02",result:"4 pass",cls:"ok"},
+  {name:"Each step gets what it needs",codes:"PRE-01..02 pass · PRE-03 on h2 and h3: the receiver tests the condition on every message (see Run)",result:"2 pass · 2 checked at run time",cls:"amber"},
+  {name:"Company rules combined",codes:"POL-01 · POL-02",result:"2 pass",cls:"ok"},
+  {name:"Tools stay with their owner",codes:"TOOL-01..03",result:"3 pass",cls:"ok"},
+  {name:"Duplicates, failures, test payloads",codes:"DUP-01 · FAIL-01 · CONF-01",result:"3 pass",cls:"ok"},
+  {name:"Nothing private leaked",codes:"ALN-01 · DUP-02 · PRIV-01 ×2",result:"4 pass · mediator only",cls:"dash"}
+];
+const OPAQUE = {
+  B:{title:"Lakeside",lines:[["you send","invoice id, items, customer name and email"],["you get back","plan status, loan id, total"],["it ends","completed, or declined → you take card payment"],["you send","loan id, “shipped”, invoice total"],["","Lakeside accepts only if under $10,000 or manager-approved"]]},
+  A:{title:"Northwind",lines:[["you get","invoice id, items, customer name and email"],["you send","plan status, loan id, total"],["you get","loan id, “shipped”, invoice total"],["","you accept only if under $10,000 or approved (you never learn why)"],["it ends","completed, or card payment after you decline"]]}
+};
+
+/* ============================================================
+   Graph renderer — orthogonal routing over a column/row grid
+   ============================================================ */
+const CW=136, NW=116, NH=36, RH=60, X0=58;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const byId = Object.fromEntries(NODES.map(n=>[n.id,n]));
+
+function laneSpec(lanes, opts){
+  const spec={}; let y=0; const gap=opts.gap??110;
+  const inL=NODES.filter(n=>lanes.includes(n.lane));
+  const minCol=Math.min(...inL.map(n=>n.col)), maxCol=Math.max(...inL.map(n=>n.col));
+  lanes.forEach((L,i)=>{
+    const padTop = L==="B" ? 52 : 30;           // B needs headroom for hops
+    let h = padTop + 2*RH + (L==="A" ? 30 : 6);
+    if(opts.projection && L!==opts.projection) h = 176;
+    spec[L]={top:y,h,rowY:[y+padTop+NH/2, y+padTop+RH+NH/2]};
+    if(i===0) spec.gapTop=y+h;
+    y += h + (i<lanes.length-1?gap:0);
+  });
+  spec.W = X0 + (maxCol-minCol)*CW + NW/2 + 30; spec.H=y; spec.minCol=minCol;
+  spec.cx = c => X0 + (c-minCol)*CW;
+  return spec;
+}
+function pos(n, spec){ return {x:spec.cx(n.col), y:spec[n.lane].rowY[n.row]}; }
+function halfW(n){ return n.type==="START"||n.type==="END"?9:(n.w?n.w/2:NW/2); }
+function halfH(n){ return n.type==="START"||n.type==="END"?9:(n.h?n.h/2:NH/2); }
+
+function routeEdge(e,s,t,ps,pt,spec){
+  const hs=halfH(s), ht=halfH(t), ws=halfW(s), wt=halfW(t), os=e.os||0, ot=e.ot||0;
+  let pts=[], lab={x:0,y:0,anchor:"middle"};
+  const r = e.route || (s.lane!==t.lane ? "cross" : (Math.abs(s.col-t.col)<.01 ? "vert" : "straight"));
+  switch(r){
+    case "straight": pts=[{x:ps.x+ws,y:ps.y},{x:pt.x-wt,y:pt.y}]; lab={x:(pts[0].x+pts[1].x)/2, y: e.lab==="above" ? ps.y-hs-8 : ps.y+hs+13, anchor:"middle"}; break;
+    case "vert": { const d=pt.y>ps.y; pts=[{x:ps.x,y:ps.y+(d?hs:-hs)},{x:pt.x,y:pt.y+(d?-ht:ht)}]; lab={x:ps.x+6,y:(pts[0].y+pts[1].y)/2+3,anchor:"start"}; break; }
+    case "up-right": { const x=ps.x+os; pts=[{x,y:ps.y-hs},{x,y:pt.y},{x:pt.x-wt,y:pt.y}]; lab={x:x+5,y:(ps.y-hs+pt.y)/2+3,anchor:"start"}; break; }
+    case "right-down": { const x=pt.x+ot; pts=[{x:ps.x+ws,y:ps.y},{x,y:ps.y},{x,y:pt.y-ht}]; lab={x:(ps.x+ws+x)/2,y:ps.y-7,anchor:"middle"}; break; }
+    case "down-right": { const x=ps.x+os; pts=[{x,y:ps.y+hs},{x,y:pt.y},{x:pt.x-wt,y:pt.y}]; lab={x:x-5,y:(ps.y+hs+pt.y)/2+3,anchor:"end"}; break; }
+    case "down-left": { const x=ps.x+os; pts=[{x,y:ps.y+hs},{x,y:pt.y},{x:pt.x+wt,y:pt.y}]; lab={x:x+5,y:(ps.y+hs+pt.y)/2+3,anchor:"start"}; break; }
+    case "hop": { const y=ps.y-hs-26; pts=[{x:ps.x+16,y:ps.y-hs},{x:ps.x+16,y},{x:pt.x-16,y},{x:pt.x-16,y:pt.y-ht}]; lab={x:(ps.x+pt.x)/2,y:y-5,anchor:"middle"}; break; }
+    case "loop-below": { const y=ps.y+hs+20; pts=[{x:ps.x+os,y:ps.y+hs},{x:ps.x+os,y},{x:pt.x+ot,y},{x:pt.x+ot,y:pt.y+ht}]; lab={x:(ps.x+os+pt.x+ot)/2,y:y+12,anchor:"middle"}; break; }
+    case "fb": { const x=spec.cx(5.5); const up=pt.y<ps.y; const yEnd=pt.y+(up?ht:-ht);
+      if(t.type==="OPAQUE"||!up) pts=[{x:ps.x+ws,y:ps.y},{x,y:ps.y},{x,y:yEnd}];
+      else { const xe=pt.x+18, ym=yEnd+16; pts=[{x:ps.x+ws,y:ps.y},{x,y:ps.y},{x,y:ym},{x:xe,y:ym},{x:xe,y:yEnd}]; }
+      lab={x:x+6,y:(spec.gapTop||0)+36,anchor:"start"}; break; }
+    case "cross": {
+      const d=pt.y>ps.y; let xs=ps.x+os, xt=pt.x+ot;
+      if(s.type==="OPAQUE") xs=xt; if(t.type==="OPAQUE") xt=xs;
+      const y0=ps.y+(d?hs:-hs), y1=pt.y+(d?-ht:ht);
+      if(Math.abs(xs-xt)<1){ pts=[{x:xs,y:y0},{x:xs,y:y1}]; lab={x:xs,y:(y0+y1)/2,anchor:"middle",beside:true}; }
+      else { const gy=spec.gapTop+(e.gy||50); pts=[{x:xs,y:y0},{x:xs,y:gy},{x:xt,y:gy},{x:xt,y:y1}]; lab={x:(xs+xt)/2,y:gy,anchor:"middle"}; }
+      break;
+    }
+  }
+  if(e.lx) lab.x+=e.lx;
+  const d="M"+pts.map(p=>`${p.x},${p.y}`).join(" L");
+  return {d,lab};
+}
+
+function renderGraph(el, opts){
+  const lanes=opts.lanes; const mode=opts.mode||"orig"; const proj=opts.projection||null;
+  const allNodes=NODES.concat(opts.extraNodes||[]).map(n=> opts.relabel&&opts.relabel[n.id] ? {...n,...opts.relabel[n.id]} : n);
+  const allById=Object.fromEntries(allNodes.map(n=>[n.id,n]));
+  const allEdges=EDGES.concat(opts.extraEdges||[]);
+  let nodes=allNodes.filter(n=>lanes.includes(n.lane));
+  let edges=allEdges.filter(e=>lanes.includes(allById[e.s].lane)&&lanes.includes(allById[e.t].lane));
+  if(mode==="orig") { nodes=nodes.filter(n=>!n.merged); edges=edges.filter(e=>e.when!=="merged"&&e.when!=="cand"); }
+  else if(mode==="cand") { nodes=nodes.filter(n=>!n.merged); edges=edges.filter(e=>e.when!=="merged"); }
+  else edges=edges.filter(e=>e.when!=="orig"&&e.when!=="cand");
+  const spec=laneSpec(lanes,{gap:opts.gap,projection:proj});
+  const local={...allById};
+  if(proj){
+    const other=proj==="A"?"B":"A";
+    const op={id:"OPAQUE."+other,lane:other,type:"OPAQUE",col:6,row:0,w:6*CW+NW-8,h:140};
+    nodes=nodes.filter(n=>n.lane!==other).concat([op]);
+    edges=edges.filter(e=>!(allById[e.s].lane===other&&allById[e.t].lane===other)).map(e=>({...e, s:allById[e.s].lane===other?op.id:e.s, t:allById[e.t].lane===other?op.id:e.t}));
+    local[op.id]=op;
+    spec[other].rowY[0]= spec[other].top + spec[other].h/2 + 8;
+  }
+  const W=spec.W, H=spec.H;
+  let out=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria||"Procedure graph")}">`;
+  out+=`<defs>
+    <marker id="ar-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    <marker id="ar-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)"/></marker>
+    <marker id="ar-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker>
+  </defs>`;
+  lanes.forEach(L=>{
+    const sp=spec[L]; const o=ORG[L];
+    const title = proj && proj!==L ? `${o.short} · what ${ORG[proj].short} receives` : `Company ${L} · ${o.name}`;
+    out+=`<g class="lane ${L}"><rect class="bg" x="0" y="${sp.top}" width="${W}" height="${sp.h}" rx="6"/><text class="lt" x="12" y="${sp.top+17}">${esc(title)}</text></g>`;
+  });
+  edges.forEach(e=>{
+    const s=local[e.s], t=local[e.t]; const ps=pos(s,spec), pt=pos(t,spec);
+    const {d,lab}=routeEdge(e,s,t,ps,pt,spec);
+    const hlE = opts.highlight && e.id && opts.highlight.edges.includes(e.id);
+    const run = opts.run||null; const ranE = run && e.id && run.edges.includes(e.id); const failE = run && e.id && run.failed.includes(e.id);
+    const hidden = opts.hideEdges && e.id && opts.hideEdges.includes(e.id);
+    const cls=["edge",e.rel||"LEADS_TO",e.boundary||e.pair?"boundary":"",e.pair?"pair":"",e.when||"", e.id?("e-"+e.id):"", hlE?"hl":(opts.highlight?"dimmed":""), ranE?"ran":"", failE?"failed":"", hidden?"fade":""].join(" ");
+    const marker=e.pair?"":(e.boundary?"ar-c":(e.rel==="ON_FAILURE"?"ar-w":"ar-m"));
+    out+=`<g class="${cls}" data-edge="${esc(e.id||"")}"><path d="${d}" ${marker?`marker-end="url(#${marker})"`:""}/>`;
+    if(e.label){
+      if(e.boundary||e.pair){
+        const w=Math.max(e.label.length*5.6,(e.sub||"").length*5)+16; const bx= lab.beside ? lab.x+w/2+12 : lab.x;
+        out+=`<rect x="${bx-w/2}" y="${lab.y-15}" width="${w}" height="30" rx="3" fill="var(--surface)" stroke="var(--c)"/>
+              <text x="${bx}" y="${lab.y-3}" text-anchor="middle">${esc(e.label)}</text><text class="sub" x="${bx}" y="${lab.y+9}" text-anchor="middle">${esc(e.sub||"")}</text>`;
+      } else {
+        out+=`<text x="${lab.x}" y="${lab.y}" text-anchor="${lab.anchor}">${esc(e.label)}</text>`;
+      }
+    }
+    out+=`</g>`;
+  });
+  nodes.forEach(n=>{
+    const p=pos(n,spec);
+    const hlN = opts.highlight && opts.highlight.nodes.includes(n.id);
+    const run = opts.run||null; const ranN = run && run.nodes.includes(n.id); const curN = run && run.cur===n.id; const failN = run && run.failedNodes.includes(n.id);
+    const cls=["node",n.type,n.lane,n.vis||"",n.merged?"merged":"", hlN?"hl":(opts.highlight?"dimmed":""), n.added?"added":"", ranN?"ran":"", curN?"cur":"", failN?"failed":""].join(" ");
+    out+=`<g class="${cls}" data-node="${esc(n.id)}">`;
+    if(n.type==="START"||n.type==="END"){
+      out+=`<circle cx="${p.x}" cy="${p.y}" r="9"/><text x="${p.x}" y="${p.y+22}" text-anchor="middle" class="desc">${n.type}</text><title>${esc(n.id)}</title>`;
+    } else if(n.type==="OPAQUE"){
+      const hw=n.w/2, hh=n.h/2, d=OPAQUE[n.lane];
+      out+=`<rect x="${p.x-hw}" y="${p.y-hh}" width="${n.w}" height="${n.h}" rx="6"/>
+            <text class="t" x="${p.x}" y="${p.y-hh+22}" text-anchor="middle">${esc(d.title)}</text>
+`;
+      d.lines.forEach((ln,i)=>{ const y=p.y-hh+58+i*16; out+=`<text class="k" x="${p.x-hw+22}" y="${y}">${esc(ln[0])}</text><text class="v" x="${p.x-hw+82}" y="${y}">${esc(ln[1])}</text>`; });
+      out+=`<title>Opaque projection of ${esc(ORG[n.lane].name)}</title>`;
+    } else {
+      const hw=NW/2, hh=NH/2, isFail=n.type==="END_fail"; const lines=String(n.label).split("\n");
+      out+=`<rect x="${p.x-hw}" y="${p.y-hh}" width="${NW}" height="${NH}" rx="${isFail?18:4}"/>`;
+      if(n.sub) out+=`<text x="${p.x}" y="${p.y}" text-anchor="middle">${esc(lines[0])}</text><text class="desc" x="${p.x}" y="${p.y+12}" text-anchor="middle">${esc(n.sub)}</text>`;
+      else if(lines.length===2) out+=`<text x="${p.x}" y="${p.y-1}" text-anchor="middle">${esc(lines[0])}</text><text x="${p.x}" y="${p.y+11}" text-anchor="middle">${esc(lines[1])}</text>`;
+      else out+=`<text x="${p.x}" y="${p.y+4}" text-anchor="middle">${esc(lines[0])}</text>`;
+      out+=`<title>${esc(n.id)}${n.desc?"\n"+n.desc:""}${n.tools?"\n"+n.tools:""}\nvisibility: ${n.vis||"internal"}</title>`;
+    }
+    out+=`</g>`;
+  });
+  out+=`</svg>`;
+  el.innerHTML=out;
+}
+
+/* ============================================================
+   App state + stages
+   ============================================================ */
+const STAGES=["Inputs","Merge","Interview","Contract","Run","Update"];
+const state={stage:0, phase:0, linkShown:0, findShown:0, selF:null, playing:false, timer:null, answered:new Set(), answers:{}, selQ:"q1", view:"M", signed:{A:false,B:false}, run:"run_0001", resent:false, change:"c1"};
+const $=s=>document.querySelector(s);
+
+function renderSteps(){
+  $("#steps").innerHTML=STAGES.map((s,i)=>`<button data-go="${i}" class="${i===state.stage?"on":""} ${i<state.stage?"done":""}"><span class="n">${i<state.stage?"✓":i}</span>${s}</button>`).join("");
+}
+function go(i){
+  state.stage=Math.max(0,Math.min(5,i)); renderSteps();
+  document.querySelectorAll(".stage").forEach(s=>s.classList.toggle("on",+s.dataset.stage===state.stage));
+  if(state.stage===1) restart(); else pause();
+  if(state.stage!==4) rPause();
+  if(state.stage===3) renderContract();
+  if(state.stage===4) renderRun();
+  if(state.stage===5) renderUpdate();
+  window.scrollTo({top:0});
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-go]"); if(b&&!b.disabled) go(+b.dataset.go);});
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("textarea,input")) return;
+  if(e.key==="ArrowRight") go(state.stage+1); else if(e.key==="ArrowLeft") go(state.stage-1);
+  else if(e.key===" "&&state.stage===1){e.preventDefault(); pause(); step();}
+});
+
+/* ---- Stage 0 ---- */
+function renderInputs(){
+  $("#srcA").textContent=SRC_A; $("#srcB").textContent=SRC_B;
+  renderGraph($("#gA"),{lanes:["A"],mode:"orig",aria:"Northwind's compiled graph: a linear invoicing chain with a payment retry loop and a manager gate for orders of ten thousand dollars or more."});
+  renderGraph($("#gB"),{lanes:["B"],mode:"orig",aria:"Lakeside's compiled loan workflow with two skip paths and a not-eligible decline exit."});
+  
+  for(const L of ["A","B"]){ const w=LINT[L].some(l=>l.sev==="warn"); $("#lint"+L+"-s").innerHTML=`<span class="pill ${w?"warn":"line"}">${w?"1 thing to fix":"1 note"}</span> found while reading the procedure`; $("#lint"+L).innerHTML=LINT[L].map(l=>`<div>${esc(l.text)}</div>`).join(""); }
+}
+
+/* ---- Stage 1: merge player ----
+   phase 0: both procedures submitted · 1: join — proposed matches appear one by one · 2: check — findings stream in · 3: done.
+   Plays automatically on entering the stage. */
+const PHASES=["Submitted","1 Join","2 Check"];
+const CAND=["c1","p1","c3","c2","c4"];
+function applyPhase(){
+  const selF = (state.phase>=2 && state.selF!=null && state.selF<state.findShown) ? FINDINGS[state.selF] : null;
+  const hide = state.phase===0 ? CAND : (state.phase===1 ? CAND.slice(state.linkShown) : []);
+  renderGraph($("#gMerge"),{lanes:["A","B"],mode:"cand",gap:112,hideEdges:hide,highlight:selF?selF.hl:null,aria:"Both procedures in two lanes; proposed matches appear between them one by one, then each finding highlights the steps it concerns."});
+  $("#phases").innerHTML=PHASES.map((p,i)=>`<span class="ph-item ${i<state.phase?"done":""} ${i===state.phase?"cur":""}">${p}${i===1&&state.phase===1?` · ${state.linkShown}/${CAND.length}`:""}${i===2&&state.phase===2?` · ${state.findShown}/7`:""}</span>`).join(`<span style="color:var(--muted)">→</span>`);
+  const pct = state.phase===0 ? 0 : state.phase===1 ? 8+42*state.linkShown/CAND.length : state.phase===2 ? 50+50*state.findShown/FINDINGS.length : 100;
+  $("#prog").style.width=pct+"%";
+  let n="";
+  if(state.phase===1 && state.linkShown>0) n=EDGES.find(e=>e.id===CAND[state.linkShown-1]).narr;
+  if(state.phase===2 && state.findShown>0) n=FINDINGS[state.findShown-1].narr;
+  if(state.phase===3) n="<b>Checked.</b> Two findings fixed automatically; five need a person. Their answers will add the converter steps and the fallback you'll see in the contract.";
+  $("#narr").innerHTML=n; $("#narr").hidden=!n;
+  const fl=$("#findings");
+  $("#fpanel").hidden = !(state.phase>=2 && state.findShown>0);
+  fl.innerHTML=FINDINGS.slice(0,state.findShown).map((f,i)=>`<div class="finding ${f.pass?"pass":""} ${state.selF===i?"sel":""}" data-i="${i}" role="button" tabindex="0">
+    <div class="row"><span class="code">${f.id}</span><span class="pill ${f.route==="auto"?"ok":"c"}">${f.route==="auto"?"fixed automatically":`ask ${ORG[QUESTIONS.find(q=>q.id===f.q).to].short}`}</span></div>
+    <div class="txt">${esc(f.text)}</div></div>`).join("");
+  fl.querySelectorAll(".finding").forEach(el=>{ const pick=()=>{ const i=+el.dataset.i; if(i>=state.findShown) return; pause(); state.selF = state.selF===i ? null : i; applyPhase(); }; el.onclick=pick; el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();} }; });
+  $("#fcount").textContent=`${state.findShown} of 7`;
+  const auto=FINDINGS.slice(0,state.findShown).filter(f=>f.route==="auto").length, ask=state.findShown-auto;
+  $("#fsum").textContent= state.findShown<7 ? `Checking… ${auto} fixed · ${ask} to ask` : `2 fixed automatically · 5 questions to ask`;
+  $("#toInterview").disabled = !(state.phase>=3);
+}
+function step(){
+  if(state.phase===0) state.phase=1;
+  else if(state.phase===1){ state.linkShown++; if(state.linkShown>=CAND.length) state.phase=2; }
+  else if(state.phase===2){ state.findShown++; state.selF=state.findShown-1; if(state.findShown>=FINDINGS.length) state.phase=3; }
+  applyPhase();
+  if(state.phase>=3) pause();
+}
+function play(){
+  pause(); state.playing=true;
+  const tick=()=>{ step(); if(state.phase>=3){ pause(); return; } const d = state.phase===1 ? 900 : (state.phase===2 ? 1500 : 1200); state.timer=setTimeout(tick,d); };
+  state.timer=setTimeout(tick,1200);
+}
+function pause(){ state.playing=false; clearTimeout(state.timer); state.timer=null; }
+function restart(){ pause(); state.phase=0; state.linkShown=0; state.findShown=0; state.selF=null; applyPhase(); play(); }
+$("#mStep").onclick=()=>{ pause(); if(state.phase<3){ if(state.phase<2){ state.phase=2; state.linkShown=CAND.length; } else { state.findShown=FINDINGS.length; state.selF=null; state.phase=3; } applyPhase(); } };
+$("#mRestart").onclick=restart;
+
+/* ---- Stage 2: interview ---- */
+function renderInterview(){
+  const n=state.answered.size;
+  $("#qpanels").innerHTML=["A","B"].map(L=>{
+    const o=ORG[L]; const qs=QUESTIONS.filter(q=>q.to===L); const done=qs.filter(q=>state.answered.has(q.id)).length;
+    return `<div class="panel org${L}">
+      <div class="ph"><h2>Company ${L} · ${o.name}</h2><span class="sub">${o.role}</span><div class="right"><span class="pill ${done===qs.length?"ok":"amber"}">${done} of ${qs.length} answered</span></div></div>
+      <div class="qlist">${qs.map(q=>{
+        const ans=state.answered.has(q.id), open=state.selQ===q.id, chosen=state.answers[q.id];
+        const st = ans ? `<span class="pill ok">answered</span>` : (open?`<span class="pill c">open</span>`:`<span class="pill amber">awaiting</span>`);
+        const choices=[...q.options.map((t,i)=>({v:"o"+i,t})),{v:"other",t:"Other"}];
+        return `<div class="q ${open?"sel":""} ${ans?"done":""}">
+          <button class="head" data-q="${q.id}" aria-expanded="${open}">
+            <div class="row"><span style="font-weight:500">${q.id}</span><span style="color:var(--muted)">to ${q.who}</span>${st}</div>
+            <div class="txt">${esc(open?q.text:(q.text.length>140?q.text.slice(0,138)+"…":q.text))}</div>
+            ${!open&&ans?`<div class="def">Answer: <span style="color:var(--ink)">${esc(chosen)}</span></div>`:""}
+          </button>
+          ${open?`<div class="body">
+            <fieldset class="choices" ${ans?"disabled":""}>
+              ${choices.map((c,i)=>{ const sel = ans ? (c.v==="other" ? !q.options.includes(chosen) : q.options[i]===chosen) : i===0;
+                return `<label class="choice"><input type="radio" name="${q.id}" value="${c.v}" ${sel?"checked":""}> <span>${esc(c.t)}${i===0&&!ans?' <em class="sugg">suggested</em>':""}</span></label>`; }).join("")}
+              <textarea class="other" id="ans-${q.id}" rows="2" placeholder="Write your answer" ${ans?"readonly":""} ${(ans && !q.options.includes(chosen))?"":"hidden"}>${esc(ans && !q.options.includes(chosen) ? chosen : "")}</textarea>
+            </fieldset>
+            <div class="tw">
+              <button class="btn primary sm" data-ans="${q.id}" ${ans?"disabled":""}>Submit answer</button>
+              ${ans?`<span style="font-size:11.5px;color:var(--muted)">recorded · ${esc(q.by.split(" · ")[1])}</span>`:""}
+            </div>
+          </div>`:""}
+        </div>`;}).join("")}</div>
+    </div>`;
+  }).join("");
+  const root=$("#qpanels");
+  root.querySelectorAll(".head").forEach(b=>b.onclick=()=>{state.selQ = state.selQ===b.dataset.q ? null : b.dataset.q; renderInterview();});
+  root.querySelectorAll(".choices input[type=radio]").forEach(r=>r.onchange=()=>{ const ta=r.closest(".choices").querySelector(".other"); ta.hidden = r.value!=="other"; if(!ta.hidden) ta.focus(); });
+  root.querySelectorAll("[data-ans]").forEach(b=>b.onclick=()=>{
+    const q=QUESTIONS.find(x=>x.id===b.dataset.ans); const fs=b.closest(".q").querySelector(".choices");
+    const v=fs.querySelector("input[type=radio]:checked")?.value ?? "o0";
+    let text = v==="other" ? fs.querySelector(".other").value.trim() : q.options[+v.slice(1)];
+    if(!text) { fs.querySelector(".other").focus(); return; }
+    state.answers[q.id]=text; state.answered.add(q.id);
+    const next=QUESTIONS.find(x=>!state.answered.has(x.id)); state.selQ = next?next.id:null; renderInterview();
+  });
+  $("#qprog").style.width=(n/5*100)+"%";
+  $("#qstat").textContent = n===5 ? "All five answered · 15 minutes" : `${n} of 5 answered`;
+  $("#toContract").textContent = n===5 ? "Build contract →" : `Build contract (${n} of 5) →`;
+}
+$("#answerAll").onclick=()=>{QUESTIONS.forEach(q=>{state.answered.add(q.id); state.answers[q.id]=state.answers[q.id]||q.options[0];}); state.selQ=null; renderInterview();};
+
+/* ---- Stage 3: contract ---- */
+function renderContract(){
+  const v=state.view; const both=state.signed.A&&state.signed.B; const n=(state.signed.A?1:0)+(state.signed.B?1:0);
+  $("#viewSeg").querySelectorAll("button").forEach(b=>{b.className=(b.dataset.view===v?"on ":"")+(b.dataset.view==="M"?"c":b.dataset.view.toLowerCase());});
+  $("#cpill").className="pill "+(both?"ok":"amber"); $("#cpill").textContent= both?"contract active":`awaiting ${2-n} signature${n===1?"":"s"}`;
+  const aria={M:"Merged swimlane graph, mediator view: both lanes, two adapters, three handoff edges and the decline fallback.",A:"Northwind's projection: its own lane in full, Lakeside collapsed to one opaque box listing only the handoff fields, end states and the h3 guard.",B:"Lakeside's projection: its own lane in full, Northwind collapsed to one opaque box."};
+  renderGraph($("#gContract"),{lanes:["A","B"],mode:"merged",projection:v==="M"?null:v,gap:112,aria:aria[v]});
+  $("#clegend").innerHTML=`<span><i class="sw" style="background:var(--c-soft);border-color:var(--c)"></i>new step, created by an answer</span><span><i class="ln" style="border-color:var(--c)"></i>handoff between companies</span><span><i class="ln" style="border-style:dashed;border-color:var(--warn)"></i>if something fails</span>`;
+  // rail
+  const rail=$("#crail");
+  if(v==="M"){
+    rail.className="panel";
+    rail.innerHTML=`<div class="ph"><h2>Certificate</h2><span class="sub">every check passed; each company can re-run its own</span><div class="right"><span class="pill ok">24 checks passed</span></div></div>
+      <div class="sigs wide"><div class="label">Signatures</div>
+        <div class="sig"><span class="box med"></span>Mediator · signed</div>
+        <div class="sig"><span class="box ${state.signed.A?"on":""}"></span>Northwind ${state.signed.A?"· signed":""} <button class="btn sm" data-view-go="A">${state.signed.A?"view":"review & sign →"}</button></div>
+        <div class="sig"><span class="box ${state.signed.B?"on":""}"></span>Lakeside ${state.signed.B?"· signed":""} <button class="btn sm" data-view-go="B">${state.signed.B?"view":"review & sign →"}</button></div>
+        ${both?`<button class="btn primary" data-go="4">Run it →</button>`:""}
+      </div>
+      <details class="pf notes"><summary><span class="pill line">the 24 checks</span></summary>
+        <div class="checks wide" style="padding:8px 0 0">${CERT_GROUPS.map(g=>`<div class="check" title="${esc(g.codes)}"><span class="nm" style="width:auto;flex:1">${g.name}</span><span class="pill ${g.cls}">${g.result}</span></div>`).join("")}</div>
+      </details>`;
+    rail.querySelectorAll("[data-view-go]").forEach(b=>b.onclick=()=>{state.view=b.dataset.viewGo; renderContract();});
+  } else {
+    const o=ORG[v]; const signed=state.signed[v]; const inv={A:["Only my own steps, plus the two my answers added","Every one of my steps is run by me","Nothing of mine was removed","Every tool my steps need is mine (Stripe, warehouse)"],B:["Only my own steps","Every one of my steps is run by me","Nothing of mine was removed","Every tool my steps need is mine"]}[v];
+    rail.className="panel org"+v;
+    rail.innerHTML=`<div class="ph"><h2>${o.short} checks before signing</h2></div>
+      <div class="inv wide">
+        <div><span style="flex:1">Re-run the 20 checks on my own part</span><span class="pill ok">all match</span></div>
+        ${inv.map((t,i)=>`<div><span style="flex:1;color:var(--muted)">${t}</span><span class="pill ok">yes</span></div>`).join("")}
+      </div>
+      <div class="sigs wide">
+        <button class="btn ${v.toLowerCase()}" id="signBtn" ${signed?"disabled":""}>${signed?`Signed as ${o.short} ✓`:`Sign as ${o.short}`}</button>
+        <button class="btn sm" data-view-go="M">← back</button>
+      </div>`;
+    rail.querySelector("#signBtn").onclick=()=>{state.signed[v]=true; renderContract();};
+    rail.querySelectorAll("[data-view-go]").forEach(b=>b.onclick=()=>{state.view=b.dataset.viewGo; renderContract();});
+  }
+}
+$("#viewSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.view=b.dataset.view; renderContract();});
+
+/* ---- Stage 4: run ---- */
+// A trace is a list of steps: {n:node} executes a node, {e:edgeId} crosses a handoff, {fail:edgeId} is a refused handoff.
+const TRACE_COMMON_1=[{n:"A.START"},{n:"A.create_customer"},{n:"A.create_invoice"},{n:"A.add_invoice_items"},{n:"A.finalize_invoice"},{n:"A.adapt_basket_for_lender"},{e:"h1"},
+  {n:"B.START"},{n:"B.checkLoanCanBeProvided"},{n:"B.getCustomerTermsAndConditions"},{n:"B.createCustomer"},{n:"B.initiateBnplTransaction"},{n:"B.authenticateCustomerAndAuthorizeLoan"},{n:"B.retrieveFinalizedPaymentPlan"},{e:"h2"},
+  {n:"A.mark_invoice_paid_out_of_band"},{n:"A.await_invoice_paid"}];
+const RUNS={
+  run_0001:{sub:"under $10,000 · no approval needed",
+    trace:[...TRACE_COMMON_1,{n:"A.fulfil_order"},{e:"h3"},{n:"B.updateOrderStatus"},{n:"B.END"},{n:"A.END"}],
+    cards:[
+      {id:"h1",title:"h1 · basket sent to Lakeside",what:"Invoice id, items, customer name and email.",chk:"Lakeside checked the contract, the handoff, the fields and the conditions → accepted. 2 eligible items, $2,780.",pay:"{ invoice_id: in_1S9kQ2Lq7, products: [price_1S9kNzLq7 $2,400.00, price_1S9kO4Lq7 $380.00], customer: { name: Jenny Rosen, email: jenny.rosen@example.com } }"},
+      {id:"h2",title:"h2 · payment plan returned",what:"Plan authorized, loan id, total $2,780. Lakeside ran five private steps the shop never sees.",chk:"Northwind checked: plan authorized and total matches the invoice → accepted. Invoice marked paid.",pay:"{ finalizedPaymentPlan: { status: authorized, loanTransactionId: lt_7f3a9c, totalLoanAmount: $2,780.00 } }"},
+      {id:"h3",title:"h3 · shipped, loan activated",what:"Loan id, “shipped”, invoice total $2,780.",chk:"Lakeside checked: under $10,000 → accepted. Loan active.",pay:"{ loanTransactionId: lt_7f3a9c, order_status: fulfilled, invoice_total: $2,780.00 }"}
+    ]},
+  run_0002:{sub:"over $10,000 · the shop's automation skipped its manager approval",
+    trace:[...TRACE_COMMON_1,{n:"A.fulfil_order"},{fail:"h3"}],
+    cards:[
+      {id:"h1",title:"h1 · basket sent to Lakeside",what:"Invoice id, items, customer name and email.",chk:"Accepted. 2 eligible items, $12,400.",pay:"{ invoice_id: in_1S9mAqLq7, products: [2 items], customer: { name, email } }"},
+      {id:"h2",title:"h2 · payment plan returned",what:"Plan authorized, loan id, total $12,400.",chk:"Accepted. Invoice marked paid.",pay:"{ finalizedPaymentPlan: { status: authorized, loanTransactionId: lt_9b12e0, totalLoanAmount: $12,400.00 } }"},
+      {id:"h3",title:"h3 · shipped, loan activated",what:"Loan id, “shipped”, invoice total $12,400 — and no manager approval attached.",
+       chk:"Lakeside checked: $12,400 is over $10,000 and nothing says a manager approved → refused. The contract is flagged for this handoff and the shop's agent asks a person.",
+       chkOk:"Re-sent with the manager's approval attached → accepted. Loan active, contract restored.",
+       pay:"{ loanTransactionId: lt_9b12e0, order_status: fulfilled, invoice_total: $12,400.00 }",fail:true}
+    ]}
+};
+const rstate={pos:0,playing:false,timer:null};
+function runView(){
+  const r=RUNS[state.run]; const steps=r.trace.slice(0,rstate.pos);
+  const v={nodes:[],edges:[],failed:[],failedNodes:[],cur:null,doneEdges:[],failedEdge:null,finished:rstate.pos>=r.trace.length};
+  steps.forEach(st=>{ if(st.n) v.nodes.push(st.n); if(st.e){v.edges.push(st.e); v.doneEdges.push(st.e);} if(st.fail){ v.failed.push(st.fail); v.failedEdge=st.fail; } });
+  const last=steps[steps.length-1]; if(last&&last.n&&!v.finished) v.cur=last.n;
+  if(v.failedEdge && !state.resent){ v.failedNodes.push("A.fulfil_order"); }
+  if(v.failedEdge && state.resent){ v.failed=[]; v.edges.push("h3"); v.doneEdges.push("h3"); v.nodes.push("A.approve_large_order","B.updateOrderStatus","B.END","A.END"); v.failedEdge=null; }
+  return v;
+}
+function renderRun(){
+  const r=RUNS[state.run]; const v=runView();
+  $("#runSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.run===state.run));
+  $("#rsub").textContent=r.sub;
+  $("#rprog").style.width=(rstate.pos/r.trace.length*100)+"%";
+  const refused = v.failedEdge && !state.resent;
+  $("#rpill").className="pill "+(refused?"warn":(v.finished?"ok":"line"));
+  $("#rpill").textContent = refused ? "handoff refused" : (v.finished ? (state.resent&&state.run==="run_0002" ? "completed on retry" : "completed") : (rstate.pos?"running":"ready"));
+  $("#rPlay").textContent=rstate.playing?"❚❚":"▶";
+  renderGraph($("#gRun"),{lanes:["A","B"],mode:"merged",gap:112,run:v,aria:"The joint procedure with the steps already run in green, the current step in violet, and a refused handoff in red."});
+  $("#hcards").innerHTML=r.cards.map(c=>{
+    const done=v.doneEdges.includes(c.id), fail=v.failedEdge===c.id, cur=!done&&!fail&&v.cur&&((c.id==="h1"&&v.cur.startsWith("A.")&&!v.doneEdges.length)||(c.id==="h2"&&v.doneEdges.length===1)||(c.id==="h3"&&v.doneEdges.length===2));
+    const st = fail?`<span class="pill warn">refused</span>`:(done?`<span class="pill ok">accepted</span>`:(cur?`<span class="pill c">in progress</span>`:`<span class="pill line">waiting</span>`));
+    const chk = (done&&c.fail&&state.resent) ? c.chkOk : ((done||fail)?c.chk:"");
+    return `<div class="hcard ${fail?"fail":(done?"done":(cur?"cur":""))}">
+      <div class="hd"><b>${esc(c.title)}</b>${st}</div>
+      <div class="what">${esc(c.what)}</div>
+      ${chk?`<div class="chk">${esc(chk)}</div>`:""}
+      ${fail?`<div class="tw"><button class="btn primary sm" id="resend">Attach manager approval and resend</button></div>`:""}
+      ${(done||fail)?`<details><summary>what was sent</summary><pre>${esc(c.pay)}</pre></details>`:""}
+    </div>`;}).join("");
+  const rs=$("#resend"); if(rs) rs.onclick=()=>{ state.resent=true; rstate.pos=r.trace.length; renderRun(); };
+}
+function rStep(){ const r=RUNS[state.run]; if(rstate.pos<r.trace.length){ rstate.pos++; renderRun(); } if(rstate.pos>=r.trace.length) rPause(); }
+function rPlay(){ const r=RUNS[state.run]; if(rstate.pos>=r.trace.length){ rstate.pos=0; state.resent=false; } rstate.playing=true; renderRun(); rstate.timer=setInterval(rStep,420); }
+function rPause(){ rstate.playing=false; clearInterval(rstate.timer); rstate.timer=null; if(state.stage===4) $("#rPlay").textContent="▶"; }
+function rRestart(){ rPause(); rstate.pos=0; state.resent=false; renderRun(); }
+$("#rPlay").onclick=()=> rstate.playing?rPause():rPlay();
+$("#rStep").onclick=()=>{ rPause(); rStep(); };
+$("#rRestart").onclick=rRestart;
+$("#runSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{ rPause(); state.run=b.dataset.run; rstate.pos=0; state.resent=false; renderRun(); });
+
+/* ---- Stage 5: update ---- */
+const CHANGES=[
+  {id:"c1",org:"A",title:"Raise the approval threshold from $10,000 to $15,000",kind:"a rule changes · at the handoff",
+   highlight:{nodes:["A.approve_large_order"],edges:["h3"]},
+   relabel:{"A.approve_large_order":{label:"approve ≥ $15k"}},
+   relabelEdges:{h3:{sub:"only if under $15k or manager-approved"}},
+   before:"Orders of $10,000 or more need a manager",after:"Orders of $15,000 or more need a manager",
+   touches:[{what:"approve step",verb:"relabelled"},{what:"h3 · the condition Lakeside enforces",verb:"rewritten"}],
+   rechecked:["h3 gets what it needs","h3 test payloads"],checksTotal:24,
+   keeps:"h1, h2, all five answers, the other 22 checks",
+   people:"Nobody is asked: no earlier answer depended on the threshold. Both companies re-sign, because Lakeside's part changed."},
+  {id:"c4",org:"A",title:"Add a “partial shipment” notice to the lender",kind:"a handoff step is added · at the boundary",
+   highlight:{nodes:["A.notify_partial"],edges:["h4"]},
+   extraNodes:[{id:"A.notify_partial",lane:"A",type:"ACTION",vis:"handoff",col:9.1,row:0,label:"notify partial",sub:"new · shipment split",added:true}],
+   extraEdges:[{id:"x3",s:"A.fulfil_order",t:"A.notify_partial",route:"up-right",os:24},{id:"h4",s:"A.notify_partial",t:"B.updateOrderStatus",boundary:true,ot:20,gy:98,label:"h4 · partial shipment",sub:"new handoff: fields and conditions to agree"}],
+   before:"Northwind tells Lakeside once, when the whole order ships",after:"Northwind also tells Lakeside when part of an order ships",
+   touches:[{what:"notify partial step",verb:"added"},{what:"h4 · a new handoff",verb:"matched, fields agreed, checked"}],
+   rechecked:["h4 data shapes","h4 fields allowed","h4 gets what it needs","h4 test payloads","every step still ends"],checksTotal:29,
+   keeps:"h1, h2, h3, all five answers, all 24 existing checks",
+   people:"Two new questions: Northwind, what may be sent on h4; Lakeside, whether a partial shipment activates the loan. Both sign. This is the most a change can cost: about one handoff's worth of the original merge."},
+  {id:"c6",org:"B",title:"Stop returning the plan total to the shop",kind:"a field is removed · at the handoff",
+   highlight:{nodes:["B.retrieveFinalizedPaymentPlan","A.mark_invoice_paid_out_of_band"],edges:["h2"]},
+   relabelEdges:{h2:{sub:"returns: status, loan id — total removed"}},
+   relabel:{"A.mark_invoice_paid_out_of_band":{sub:"condition reads a field that is gone"}},
+   before:"Lakeside returns plan status, loan id and total",after:"Lakeside returns plan status and loan id only",
+   touches:[{what:"h2 · what Lakeside returns",verb:"one field gone"},{what:"mark invoice paid step",verb:"its condition can no longer be tested"},{what:"answer q3",verb:"built on the missing field"}],
+   rechecked:["h2 data shapes → fails","h2 gets what it needs → fails","h2 test payloads"],checksTotal:24,
+   keeps:"h1, h3, the other four answers",
+   people:"Both companies are asked, as a conflict rather than a follow-up: Lakeside's removal contradicts Northwind's earlier answer. The contract is blocked until they resolve it; nothing is quietly dropped."},
+  {id:"c5",org:"B",title:"Eligibility check now leaves a credit inquiry",kind:"a step does more than before · at the handoff",
+   highlight:{nodes:["B.checkLoanCanBeProvided"],edges:["h1"]},
+   before:"The eligibility check only looks",after:"The eligibility check also records a credit inquiry against the customer",
+   touches:[{what:"h1 · what Northwind may send",verb:"list rebuilt"},{what:"answer q1",verb:"re-asked"}],
+   rechecked:["h1 fields allowed","tools stay with their owner"],checksTotal:24,
+   keeps:"h2, h3, the other four answers, the other 22 checks",
+   people:"Northwind is asked q1 again, with its old answer offered as the default, because that answer assumed the step only checked. Both sign."}
+];
+function renderUpdate(){
+  const c=CHANGES.find(x=>x.id===state.change);
+  $("#changes").innerHTML=CHANGES.map(x=>`<button class="change ${x.id===state.change?"on":""}" data-change="${x.id}"><span>${esc(x.title)}</span><span class="pill ${x.org.toLowerCase()}">${ORG[x.org].short}</span></button>`).join("");
+  $("#changes").querySelectorAll(".change").forEach(b=>b.onclick=()=>{state.change=b.dataset.change; renderUpdate();});
+  $("#uTitle").textContent=c.title; $("#uTag").innerHTML=`<span class="pill line">${esc(c.kind)}</span>`;
+  // relabel boundary edge subs through a shallow copy of EDGES
+  const extraEdges=(c.extraEdges||[]);
+  const relabelEdges=c.relabelEdges||{};
+  const savedSubs={}; Object.keys(relabelEdges).forEach(id=>{const e=EDGES.find(x=>x.id===id); savedSubs[id]=e.sub; e.sub=relabelEdges[id].sub;});
+  renderGraph($("#gUpdate"),{lanes:["A","B"],mode:"merged",gap:112,extraNodes:c.extraNodes||[],extraEdges,relabel:c.relabel||{},highlight:c.highlight,aria:"The joint procedure with the parts affected by the selected change highlighted; everything else dimmed."});
+  Object.keys(savedSubs).forEach(id=>{EDGES.find(x=>x.id===id).sub=savedSubs[id];});
+  $("#impact").innerHTML=`
+    <div class="k"><div class="label">What changed</div><div class="ba"><span class="was">${esc(c.before)}</span><span class="arr">→</span><span class="now">${esc(c.after)}</span></div></div>
+    <div class="k"><div class="label">What it touches in the joint procedure</div><div class="chips">${c.touches.map(t=>`<span class="chip"><b>${esc(t.what)}</b> · ${esc(t.verb)}</span>`).join("")}</div></div>
+    <div class="k"><div class="label">Re-checked</div><div class="chips">${c.rechecked.map(t=>`<span class="chip ${t.includes("fails")?"bad":"ok"}">${esc(t)}</span>`).join("")}<span class="chip deny">${c.checksTotal-c.rechecked.length} others carried forward</span></div></div>
+    <div class="k"><div class="label">Untouched</div><div style="font-size:12.5px">${esc(c.keeps)}</div></div>
+    <div class="k"><div class="label">Who has to do anything</div><div style="font-size:12.5px;line-height:1.5">${esc(c.people)}</div></div>`;
+}
+
+/* ---- reset + boot ---- */
+$("#btnReset").onclick=()=>{ pause(); rPause(); rstate.pos=0; Object.assign(state,{phase:0,linkShown:0,findShown:0,selF:null,answered:new Set(),answers:{},selQ:"q1",view:"M",signed:{A:false,B:false},run:"run_0001",resent:false,change:"c1"}); applyPhase(); renderInterview(); renderContract(); renderRun(); go(0); };
+renderInputs(); renderInterview(); renderContract(); renderRun(); renderUpdate(); go(0);
+</script>
+
+</body>
+</html>
